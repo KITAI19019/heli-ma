@@ -1,6 +1,6 @@
 // @refresh reset
 import { useEffect, useRef, useState } from 'react';
-import { getAnalysis, listAnalyses, saveAnalysis } from './database';
+import { deleteAnalyses, getAnalysis, listAnalyses, saveAnalysis } from './database';
 import { readDraft, writeDraft } from './draft';
 import { AnalysisEditor, Judgment } from './Editors';
 import { conclusionOf, inputError, isPending, kindNames, newAnalysis, titleOf, type Analysis, type Draft, type HistoryItem, type Kind } from './model';
@@ -12,6 +12,9 @@ import { useAppearance } from './useAppearance';
 import { UtilityScreen } from './UtilityScreen';
 import { transitionWorkflow } from './workflowTransition';
 import { DiscardDialog, type DiscardRequest } from './DiscardDialog';
+import { HistoryList } from './HistoryList';
+import { GrowingTextarea } from './GrowingTextarea';
+import { useViewport, useFittedDescriptions } from './useViewport';
 
 type WorkflowPage = 'home' | 'input' | 'analysis' | 'history' | 'result';
 type UtilityPage = 'tutorial' | 'language' | 'theme';
@@ -39,6 +42,7 @@ function MenuIcon({ page }: { page: UtilityPage }) {
 }
 
 export default function App() {
+  useViewport();
   const appearance = useAppearance();
   const [draft, setDraft] = useState<Draft | null>(initial.draft);
   const [page, setPage] = useState<Page>(initial.draft?.screen ?? 'home');
@@ -137,9 +141,31 @@ export default function App() {
     catch (cause) { setError(cause instanceof Error ? cause.message : '记录加载失败。'); }
     finally { setBusy(false); }
   }
+  function requestDelete(items: HistoryItem[]) {
+    if (!items.length || busy) return;
+    const title = items[0].title.length > 80 ? `${items[0].title.slice(0, 80)}…` : items[0].title;
+    setDiscardRequest({
+      title: items.length === 1 ? '删除这条记录？' : `删除所选 ${items.length} 条记录？`,
+      cancelText: '取消', confirmText: '确认删除',
+      message: items.length === 1 ? `“${title}”及其分析内容将从本机删除，删除后无法恢复。` : `所选 ${items.length} 条记录及其分析内容将从本机删除，删除后无法恢复。`,
+      onConfirm: () => { void removeHistory(items.map(item => item.id)); },
+    });
+  }
+  async function removeHistory(ids: string[]) {
+    if (saving.current) return;
+    saving.current = true; setBusy(true); setError('');
+    try {
+      await deleteAnalyses(ids);
+      const removed = new Set(ids);
+      setHistory(current => current.filter(item => !removed.has(item.id)));
+      setResult(current => current && removed.has(current.id) ? null : current);
+    } catch (cause) { setError(`删除未完成：${cause instanceof Error ? cause.message : '请重试。'}`); }
+    finally { saving.current = false; setBusy(false); }
+  }
   const active = draft?.analysis;
   const utilityPage = isUtilityPage(page);
   const workflowPage = utilityPage ? utilityReturn.current : page;
+  useFittedDescriptions(workflowPage);
   const Main = utilityPage ? 'div' : 'main';
   const analysisTitle = active?.kind === 'relation' ? kindNames.relation : `${kindNames[active?.kind ?? 'fact']}分析`;
   const headingText = workflowPage === 'home' ? '这件事，合理吗？' : workflowPage === 'history' ? '历史记录' : workflowPage === 'result' ? '我的分析结果' : workflowPage === 'input' ? `输入${active?.kind === 'relation' ? ' A 和 B' : kindNames[active?.kind ?? 'fact']}` : analysisTitle;
@@ -168,7 +194,7 @@ export default function App() {
 
   return <><div className="app-shell" inert={utilityPage || undefined} aria-hidden={utilityPage || undefined}>
     {topbar(workflowPage)}
-    <Main className={workflowPage === 'home' ? 'workflow-main home-main' : 'workflow-main'}><h1 tabIndex={-1} ref={heading} className="page-title">{headingText}</h1>
+    <Main className={workflowPage === 'home' ? 'workflow-main home-main' : 'workflow-main'} data-page={workflowPage} data-kind={workflowPage === 'result' ? result?.kind : active?.kind}><h1 tabIndex={-1} ref={heading} className="page-title">{headingText}</h1>
       {error && <p className="error" role="alert">{error}</p>}{cacheError && <p className="error" role="alert">{cacheError}</p>}
       {workflowPage === 'home' && <div className="home">
         <div className="home-artwork" data-artwork={appearance.value.selected} aria-hidden="true"><Artwork value={appearance.value} customUrl={appearance.customUrl} /></div>
@@ -180,27 +206,24 @@ export default function App() {
       </div>}
       {workflowPage === 'input' && active && <form className={active.kind === 'relation' ? 'input-form relation-form' : 'input-form'} onSubmit={event => { event.preventDefault(); analyze(); }}>
         <p className="lead">{introductions[active.kind]}</p>
-        {active.kind === 'relation' ? <><label className="field relation-field"><span className="field-name">A · 可能的原因</span><textarea autoFocus value={active.a} onChange={event => updateAnalysis({ ...active, a: event.target.value })} placeholder="例如，采用某种学习方法" /></label>
-          <label className="field relation-field"><span className="field-name">B · 观察到的结果</span><textarea value={active.b} onChange={event => updateAnalysis({ ...active, b: event.target.value })} placeholder="例如，考试成绩提高" /></label>
+        {active.kind === 'relation' ? <><label className="field relation-field"><span className="field-name">A · 可能的原因</span><GrowingTextarea label="A · 可能的原因" autoFocus value={active.a} onChange={event => updateAnalysis({ ...active, a: event.target.value })} placeholder="例如，采用某种学习方法" /></label>
+          <label className="field relation-field"><span className="field-name">B · 观察到的结果</span><GrowingTextarea label="B · 观察到的结果" value={active.b} onChange={event => updateAnalysis({ ...active, b: event.target.value })} placeholder="例如，考试成绩提高" /></label>
           <p className="hint relation-hint">接下来检查“A 是否导致 B”，并寻找 A、B 发生与未发生的四类情况。</p></>
-          : <label className="field"><span className="field-name">{active.kind === 'fact' ? '待核查的说法' : '待分析的主张'}</span><textarea autoFocus value={active.statement} onChange={event => updateAnalysis({ ...active, statement: event.target.value })} placeholder={active.kind === 'fact' ? '写下你想核查的那句话' : '写下你想分析的那句话'} /></label>}
+          : <label className="field"><span className="field-name">{active.kind === 'fact' ? '待核查的说法' : '待分析的主张'}</span><GrowingTextarea label={active.kind === 'fact' ? '待核查的说法' : '待分析的主张'} autoFocus value={active.statement} onChange={event => updateAnalysis({ ...active, statement: event.target.value })} placeholder={active.kind === 'fact' ? '写下你想核查的那句话' : '写下你想分析的那句话'} /></label>}
         <div className="actions"><button className="primary" type="submit">进入分析 →</button><button type="button" onClick={home}>回到首页</button></div>
       </form>}
       {workflowPage === 'analysis' && active && <><div className={active.kind === 'fact' ? 'analysis-heading' : 'analysis-heading compact-heading'}><p className="statement">{titleOf(active)}</p><button disabled={busy} onClick={() => { void navigate('input', () => { if (draft) updateDraft({ ...draft, screen: 'input' }); }); }}>修改输入</button></div>
-        <fieldset disabled={busy} className="editor-fieldset"><AnalysisEditor value={active} onChange={updateAnalysis} /><Judgment value={active} onChange={updateAnalysis} /></fieldset>
+        <fieldset disabled={busy} className="editor-fieldset"><AnalysisEditor key={active.id} value={active} onChange={updateAnalysis} /><Judgment value={active} onChange={updateAnalysis} /></fieldset>
         <div className="finish-bar"><button className="primary" disabled={busy} onClick={finish}>{busy ? '保存中…' : '完成'}</button></div>
       </>}
       {workflowPage === 'history' && <>{busy && <p role="status" className="hint">正在读取本地记录…</p>}
         {!busy && !error && history.length === 0 && <p className="empty">还没有记录。完成一次分析后，它会出现在这里。</p>}
         {error && <button onClick={openHistory} disabled={busy}>重试读取</button>}
-        <div className="history-list">{history.map(item => <button className="history-card" key={item.id} disabled={busy} onClick={() => openResult(item.id)}>
-          <div><span className="eyebrow">{kindNames[item.kind]}</span><strong>{item.title}</strong><small>{new Date(item.updatedAt).toLocaleString('zh-CN')}</small></div>
-          <div className="record-status">{item.pending && <span className="pending">待分析</span>}<span>合理度 · {item.conclusion}</span></div>
-        </button>)}</div></>}
+        <HistoryList items={history} busy={busy} onOpen={openResult} onDelete={requestDelete} /></>}
       {workflowPage === 'result' && result && <><div className="result-summary"><span className="eyebrow">{kindNames[result.kind]}</span><h2>{titleOf(result)}</h2>
         <p className="result-value"><span className="result-label">合理度</span><strong>{conclusionOf(result)}</strong>{isPending(result) && <span className="pending">待分析</span>}</p>
         <div className="actions"><button className="primary" disabled={busy} onClick={editResult}>继续编辑</button><button disabled={busy} onClick={home}>回到首页</button></div>
-      </div><AnalysisEditor value={result} onChange={() => {}} readOnly /></>}
+      </div><AnalysisEditor key={result.id} value={result} onChange={() => {}} readOnly /></>}
     </Main>
   </div>
     {utilityPage && <UtilityScreen key={page} visible={!utilityClosing} onExited={() => { setUtilityClosing(false); setPage(utilityReturn.current); }}>

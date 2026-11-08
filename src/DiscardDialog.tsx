@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { lockBodyScroll } from './scrollLock';
 
-export type DiscardRequest = { message: string; confirmText: string; onConfirm: () => void };
+export type DiscardRequest = { title?: string; cancelText?: string; message: string; confirmText: string; onConfirm: () => void };
 
 export function DiscardDialog({ request, onCancel, onConfirm }: {
   request: DiscardRequest;
@@ -36,10 +36,10 @@ export function DiscardDialog({ request, onCancel, onConfirm }: {
     }}
     onClick={event => { if (event.target === event.currentTarget) choose(onCancel); }}>
     <div className="discard-card">
-      <h2 id="discard-title">放弃本次输入？</h2>
+      <h2 id="discard-title">{request.title ?? '放弃本次输入？'}</h2>
       <p id="discard-description">{request.message}</p>
       <div className="discard-actions">
-        <button autoFocus onClick={() => choose(onCancel)}>继续编辑</button>
+        <button autoFocus onClick={() => choose(onCancel)}>{request.cancelText ?? '继续编辑'}</button>
         <button className="discard-action" onClick={() => choose(onConfirm)}>{request.confirmText}</button>
       </div>
     </div>

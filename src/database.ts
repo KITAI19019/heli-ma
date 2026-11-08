@@ -83,6 +83,12 @@ export function getAnalysis(id: string): Promise<Analysis> {
     } finally { statement.free(); }
   });
 }
+export function deleteAnalyses(ids: readonly string[]): Promise<void> {
+  if (!ids.length) return Promise.resolve();
+  return access(true, db => {
+    for (const id of new Set(ids)) db.run('DELETE FROM analyses WHERE id = ?', [id]);
+  });
+}
 export function saveAnalysis(record: Analysis): Promise<Analysis> {
   assertAnalysis(record);
   const invalid = inputError(record);
@@ -92,6 +98,7 @@ export function saveAnalysis(record: Analysis): Promise<Analysis> {
     let current = 0;
     try { statement.bind([record.id]); if (statement.step()) current = Number(statement.get()[0]); }
     finally { statement.free(); }
+    if (!current && record.revision > 0) throw new Error('这条记录已被删除。当前输入仍在，请先复制需要保留的内容，再新建分析。');
     if (current !== record.revision) throw new Error('另一窗口已更新这条记录。当前输入仍在，请先复制需要保留的内容，再从历史打开最新记录。');
     const saved = { ...record, revision: current + 1, updatedAt: new Date().toISOString() };
     db.run(`INSERT INTO analyses VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
