@@ -1,0 +1,36 @@
+# Publish only the application, build inputs and deployment workflow.
+# Everything else at the project root stays local, including tests, drafts,
+# screenshots, editor state, node_modules, dist, output and _local.
+/*
+!/.gitignore
+!/.gitattributes
+!/.nvmrc
+!/README.md
+!/index.html
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/vite.config.ts
+!/src/
+!/public/
+!/scripts/
+/scripts/*
+!/scripts/build-sw.mjs
+!/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/deploy.yml
+
+# Keep incidental local files out of the published directories, too.
+**/.env
+**/.env.*
+**/*.log
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/.DS_Store
+**/Thumbs.db
+**/*.sqlite
+**/*.sqlite3
+**/*.db

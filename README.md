@@ -1,0 +1,71 @@
+# 合理吗 · V0.1
+
+整理事实、检查因果关系与主张，记录自己的判断。一个支持离线使用的 PWA，分析记录保存在当前浏览器的本地 SQLite 数据库中。
+
+[打开应用](https://kitai19019.github.io/heli-ma/) · [GitHub 仓库](https://github.com/KITAI19019/heli-ma)
+
+## 功能
+
+- **事实分析**：用过去、现在、未来与不同层级组成的九宫格整理信息，可为每格添加来源。
+- **因果关系分析**：对照 A 与 B 发生或未发生的四种组合，检查因果说法。
+- **主张分析**：整理事实、理由、依据和例外，用 0–100% 表达判断程度。
+- **历史记录**：点击「完成」才正式保存；继续编辑更新同一条记录，信息不足的判断标记为「待分析」。
+- **主题**：跟随系统、浅色、深色；可选择首页插图预设，也可使用自己的图片。
+- **离线使用**：首次联网加载并缓存完成后，可离线打开、分析与保存；支持 PWA 的浏览器可将应用安装到设备。
+
+界面支持手机与宽屏。目前使用中文，教程和语言页面为预留入口，内容尚未完成。
+
+## 数据保存
+
+应用无账号、后台数据库或跨设备同步。SQLite 通过 sql.js 在浏览器中运行，数据库文件存入 IndexedDB；分析输入暂存于 sessionStorage。上传的主题图片也只保存在当前浏览器。
+
+保存包含事务和修订冲突检查，防止多个窗口覆盖同一条记录。保存失败时保留输入。回首页并确认放弃会清除当前草稿，已完成的记录仍保留。
+
+浏览器按站点来源隔离存储，本地开发地址与线上站点的数据各自独立。清除站点数据会删除记录与自定义图片；当前版本尚无导入导出功能。
+
+## 本地运行
+
+建议使用 Node.js 24 LTS，最低 Node.js 22.12。
+
+```sh
+npm ci --ignore-scripts
+npm run dev
+```
+
+开发地址：<http://127.0.0.1:5176/>。
+
+```sh
+npm run typecheck
+npm run build
+npm run preview
+```
+
+生产预览地址：<http://127.0.0.1:4176/>。离线能力需在生产构建中验证；开发模式不注册 Service Worker。
+
+## 项目结构
+
+```text
+.github/workflows/deploy.yml   GitHub Pages 自动构建与部署
+public/                       品牌图标与 PWA manifest
+scripts/build-sw.mjs           生成离线缓存与 Service Worker
+src/                          应用界面、流程和数据层
+index.html                    应用入口
+package.json                  依赖与运行命令
+package-lock.json             固定依赖版本
+tsconfig.json                 TypeScript 配置
+vite.config.ts                Vite 配置，支持子路径部署
+```
+
+界面采用 React、TypeScript 和 CSS，使用 Vite 构建。数据类型位于 `src/model.ts`，持久化逻辑位于 `src/database.ts`，会话草稿位于 `src/draft.ts`，页面流程位于 `src/App.tsx`。
+
+仓库只包含运行、构建和部署所需文件。测试脚本、截图、设计草稿、交接资料、编辑器配置、依赖目录及本地构建产物不纳入版本控制。`src/draft.ts` 是应用运行所需的会话缓存代码。
+
+## GitHub Pages 部署
+
+推送到 `main` 后，GitHub Actions 自动安装锁定依赖、进行类型检查和生产构建，再将 `dist/` 发布到 GitHub Pages。也可在 Actions 页面手动运行 **Deploy GitHub Pages**。
+
+仓库的 Settings → Pages → Source 使用 **GitHub Actions**。源码不提交 `dist/` 或 `node_modules/`。工作流只发布构建产物，不会发布测试及本地资料。
+
+静态资源、manifest 和 Service Worker 使用相对路径，适用于 `/heli-ma/` 等子路径。应用需通过 HTTPS 或本机 localhost 使用离线能力。首次打开需要联网；更新版本后，关闭该站点的所有窗口再重新打开可启用新缓存。
+
+部署方式参考 [Vite 官方指南](https://vite.dev/guide/static-deploy)和 [GitHub Pages 官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。

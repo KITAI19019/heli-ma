@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "合理吗",
+  "short_name": "合理吗",
+  "description": "在本地整理事实、因果关系与主张，记录自己的判断。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2eee3",
+  "theme_color": "#f2eee3",
+  "icons": [
+    { "src": "./logo-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

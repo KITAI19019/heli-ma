@@ -1,0 +1,22 @@
+import { flushSync } from 'react-dom';
+
+export async function transitionWorkflow(update: () => void) {
+  const apply = () => flushSync(update);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(); return; }
+
+  if (document.startViewTransition) {
+    const transition = document.startViewTransition(apply);
+    void transition.ready.catch(() => {});
+    void transition.finished.catch(() => {});
+    await transition.updateCallbackDone;
+    return;
+  }
+
+  const shell = document.querySelector<HTMLElement>('#root > .app-shell');
+  if (!shell) { apply(); return; }
+  const fade = shell.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: 50, fill: 'forwards' });
+  await fade.finished;
+  apply();
+  fade.cancel();
+  shell.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 50 });
+}
