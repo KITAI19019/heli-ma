@@ -61,13 +61,3 @@ vite.config.ts                Vite 配置，支持子路径部署
 界面采用 React、TypeScript 和 CSS，使用 Vite 构建。数据类型位于 `src/model.ts`，持久化逻辑位于 `src/database.ts`，会话草稿位于 `src/draft.ts`，页面流程位于 `src/App.tsx`。
 
 仓库只包含运行、构建和部署所需文件。测试脚本、截图、设计草稿、交接资料、编辑器配置、依赖目录及本地构建产物不纳入版本控制。`src/draft.ts` 是应用运行所需的会话缓存代码。
-
-## GitHub Pages 部署
-
-推送到 `main` 后，GitHub Actions 自动安装锁定依赖、进行类型检查和生产构建，再将 `dist/` 发布到 GitHub Pages。也可在 Actions 页面手动运行 **Deploy GitHub Pages**。
-
-仓库的 Settings → Pages → Source 使用 **GitHub Actions**。源码不提交 `dist/` 或 `node_modules/`。工作流只发布构建产物，不会发布测试及本地资料。
-
-静态资源、manifest 和 Service Worker 使用相对路径，适用于 `/heli-ma/` 等子路径。应用需通过 HTTPS 或本机 localhost 使用离线能力。首次打开需要联网；更新版本后，关闭该站点的所有窗口再重新打开可启用新缓存。
-
-部署方式参考 [Vite 官方指南](https://vite.dev/guide/static-deploy)和 [GitHub Pages 官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
