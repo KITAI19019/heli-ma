@@ -15,6 +15,7 @@ import { DiscardDialog, type DiscardRequest } from './DiscardDialog';
 import { HistoryList } from './HistoryList';
 import { GrowingTextarea } from './GrowingTextarea';
 import { useViewport, useFittedDescriptions } from './useViewport';
+import { useBrowserBack } from './useBrowserBack';
 
 type WorkflowPage = 'home' | 'input' | 'analysis' | 'history' | 'result';
 type UtilityPage = 'tutorial' | 'language' | 'theme';
@@ -56,7 +57,10 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [utilityClosing, setUtilityClosing] = useState(false);
   const [discardRequest, setDiscardRequest] = useState<DiscardRequest | null>(null);
+  const [editingHistory, setEditingHistory] = useState(false);
   const utilityReturn = useRef<WorkflowPage>('home');
+  const backTrail = useRef<WorkflowPage[]>(initial.draft?.screen === 'analysis' ? ['home', 'input'] : initial.draft ? ['home'] : []);
+  const resultReturn = useRef<'home' | 'history'>('home');
   const saving = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -76,12 +80,16 @@ export default function App() {
   function updateAnalysis(analysis: Analysis) {
     if (draft) updateDraft({ ...draft, analysis });
   }
-  function navigate(next: WorkflowPage, update: () => void = () => {}) {
-    return transitionWorkflow(() => { update(); setPage(next); });
+  function navigate(next: WorkflowPage, update: () => void = () => {}, trail?: WorkflowPage[]) {
+    return transitionWorkflow(() => {
+      if (trail) backTrail.current = trail;
+      else if (next !== page && !isUtilityPage(page)) backTrail.current.push(page);
+      update(); setPage(next);
+    });
   }
   function home() {
     confirmDiscard({ message: '返回首页后，本次尚未完成的输入不会保存。', confirmText: '放弃并返回', onConfirm: () => {
-      void navigate('home', () => { setSidebarOpen(false); updateDraft(null); setResult(null); setError(''); });
+      void navigate('home', () => { setSidebarOpen(false); updateDraft(null); setResult(null); setError(''); }, []);
     } });
   }
   function confirmDiscard(request: DiscardRequest) {
@@ -91,9 +99,9 @@ export default function App() {
   function start(kind: Kind) {
     confirmDiscard({ message: '新建分析后，本次尚未完成的输入不会保存。', confirmText: '放弃并新建', onConfirm: () => {
       void navigate('input', () => {
-        setSidebarOpen(false); setResult(null);
+        setSidebarOpen(false); setResult(null); resultReturn.current = 'home';
         updateDraft({ analysis: newAnalysis(kind), screen: 'input' }); setError('');
-      });
+      }, ['home']);
     } });
   }
   function openUtility(next: UtilityPage) {
@@ -124,20 +132,20 @@ export default function App() {
     saving.current = true; setBusy(true); setError('');
     try {
       const saved = await saveAnalysis(draft.analysis);
-      await navigate('result', () => { updateDraft(null); setResult(saved); });
+      await navigate('result', () => { updateDraft(null); setResult(saved); }, resultReturn.current === 'history' ? ['home', 'history'] : ['home']);
       void navigator.storage?.persist?.().catch(() => false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : '本地保存失败，请重试。'); }
     finally { saving.current = false; setBusy(false); }
   }
-  async function openHistory() {
-    await navigate('history', () => { setSidebarOpen(false); setHistory([]); setBusy(true); setError(''); });
+  async function openHistory(trail: WorkflowPage[] = ['home']) {
+    await navigate('history', () => { setSidebarOpen(false); setEditingHistory(false); setHistory([]); setBusy(true); setError(''); }, trail);
     try { setHistory(await listAnalyses()); }
     catch (cause) { setError(cause instanceof Error ? cause.message : '历史记录加载失败。'); }
     finally { setBusy(false); }
   }
   async function openResult(id: string) {
     setBusy(true); setError('');
-    try { const saved = await getAnalysis(id); await navigate('result', () => setResult(saved)); }
+    try { const saved = await getAnalysis(id); await navigate('result', () => { resultReturn.current = 'history'; setResult(saved); }); }
     catch (cause) { setError(cause instanceof Error ? cause.message : '记录加载失败。'); }
     finally { setBusy(false); }
   }
@@ -162,6 +170,38 @@ export default function App() {
     } catch (cause) { setError(`删除未完成：${cause instanceof Error ? cause.message : '请重试。'}`); }
     finally { saving.current = false; setBusy(false); }
   }
+  async function back() {
+    // Native dialogs may consume system Back themselves. This fallback also
+    // handles browsers that dispatch popstate first, without leaving the page.
+    const dialogs = document.querySelectorAll<HTMLDialogElement>('dialog[open]');
+    const dialog = dialogs[dialogs.length - 1];
+    if (dialog) { dialog.dispatchEvent(new Event('cancel', { cancelable: true })); return; }
+    if (busy || utilityClosing) return;
+    if (sidebarOpen) { setSidebarOpen(false); return; }
+    if (isUtilityPage(page)) { setUtilityClosing(true); return; }
+    if (page === 'history' && editingHistory) { setEditingHistory(false); return; }
+    const trail = backTrail.current.slice(0, -1);
+    const previous = backTrail.current.at(-1) ?? 'home';
+    const leave = async () => {
+      if (previous === 'history') { await openHistory(trail); return; }
+      await navigate(previous, () => {
+        setError('');
+        if (previous === 'input' || previous === 'analysis') {
+          if (draft) {
+            const analysis = previous === 'analysis' && draft.analysis.kind === 'fact'
+              ? { ...draft.analysis, cells: draft.analysis.cells.map((cell, index) => index === 4 ? { ...cell, text: draft.analysis.statement } : cell) }
+              : draft.analysis;
+            updateDraft({ ...draft, analysis, screen: previous });
+          }
+        } else if (draft) updateDraft(null);
+        if (previous === 'home') setResult(null);
+      }, trail);
+    };
+    if (draft && previous !== 'input' && previous !== 'analysis') {
+      confirmDiscard({ message: '返回后，本次尚未完成的输入不会保存。已保存的记录不受影响。', confirmText: '放弃并返回', onConfirm: () => { void leave(); } });
+    } else await leave();
+  }
+  useBrowserBack(page !== 'home' || sidebarOpen || discardRequest !== null, back);
   const active = draft?.analysis;
   const utilityPage = isUtilityPage(page);
   const workflowPage = utilityPage ? utilityReturn.current : page;
@@ -181,7 +221,7 @@ export default function App() {
       <img className="brand-logo" src={`${import.meta.env.BASE_URL}logo.png`} width="28" height="28" alt="" /><span className="brand-word">合理吗</span>
     </div>
     <div className="top-actions"><span className="visually-hidden" role="status">{offlineStatus}</span>
-      {screen === 'home' && <button className="history-action icon-button" onClick={openHistory} aria-label="查看历史记录 →" title="历史记录">
+      {screen === 'home' && <button className="history-action icon-button" onClick={() => { void openHistory(); }} aria-label="查看历史记录 →" title="历史记录">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M3 11a9 9 0 1 0 2.6-5.4L3 8M3 3v5h5" />
           <path d="M12 7v5l3 2" />
@@ -218,8 +258,8 @@ export default function App() {
       </>}
       {workflowPage === 'history' && <>{busy && <p role="status" className="hint">正在读取本地记录…</p>}
         {!busy && !error && history.length === 0 && <p className="empty">还没有记录。完成一次分析后，它会出现在这里。</p>}
-        {error && <button onClick={openHistory} disabled={busy}>重试读取</button>}
-        <HistoryList items={history} busy={busy} onOpen={openResult} onDelete={requestDelete} /></>}
+        {error && <button onClick={() => { void openHistory(); }} disabled={busy}>重试读取</button>}
+        <HistoryList items={history} busy={busy} onOpen={openResult} onDelete={requestDelete} editing={editingHistory} onEditingChange={setEditingHistory} /></>}
       {workflowPage === 'result' && result && <><div className="result-summary"><span className="eyebrow">{kindNames[result.kind]}</span><h2>{titleOf(result)}</h2>
         <p className="result-value"><span className="result-label">合理度</span><strong>{conclusionOf(result)}</strong>{isPending(result) && <span className="pending">待分析</span>}</p>
         <div className="actions"><button className="primary" disabled={busy} onClick={editResult}>继续编辑</button><button disabled={busy} onClick={home}>回到首页</button></div>

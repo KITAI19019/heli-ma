@@ -2,12 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { kindNames, type HistoryItem } from './model';
 import { Pager } from './Pager';
 
-export function HistoryList({ items, busy, onOpen, onDelete }: { items: HistoryItem[]; busy: boolean; onOpen: (id: string) => void; onDelete: (items: HistoryItem[]) => void }) {
+export function HistoryList({ items, busy, onOpen, onDelete, editing, onEditingChange }: { items: HistoryItem[]; busy: boolean; onOpen: (id: string) => void; onDelete: (items: HistoryItem[]) => void; editing: boolean; onEditingChange: (editing: boolean) => void }) {
   const list = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState(3);
   const [selectedPage, setPage] = useState(0);
-  const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  useEffect(() => { if (!editing) setSelected(new Set()); }, [editing]);
   useEffect(() => {
     const remaining = new Set(items.map(item => item.id));
     setSelected(current => new Set([...current].filter(id => remaining.has(id))));
@@ -31,7 +31,7 @@ export function HistoryList({ items, busy, onOpen, onDelete }: { items: HistoryI
   const allVisibleSelected = visible.length > 0 && visible.every(item => selected.has(item.id));
   return <div className="history-pages" data-editing={editing || undefined}>
     {items.length > 0 && <div className="history-selection">
-      <button type="button" className="history-edit" aria-label={editing ? '完成编辑' : '编辑历史记录'} disabled={busy} onClick={() => { setEditing(!editing); setSelected(new Set()); }}>{editing ? '完成' : '编辑'}</button>
+      <button type="button" className="history-edit" aria-label={editing ? '完成编辑' : '编辑历史记录'} disabled={busy} onClick={() => { onEditingChange(!editing); setSelected(new Set()); }}>{editing ? '完成' : '编辑'}</button>
       {editing && <><button type="button" disabled={busy} onClick={() => setSelected(current => {
         const next = new Set(current);
         visible.forEach(item => { if (allVisibleSelected) next.delete(item.id); else next.add(item.id); });
