@@ -4,5 +4,11 @@ import App from './App';
 import './styles.css';
 import './viewport.css';
 
-document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
+document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches
+  ? 'dark'
+  : 'light';
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

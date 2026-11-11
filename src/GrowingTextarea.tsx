@@ -2,18 +2,24 @@ import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from 'react';
 
 // Grow within the input page's remaining space, keeping the other field and
 // navigation controls visible even when a keyboard reduces the viewport.
-export function GrowingTextarea({ label, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
+export function GrowingTextarea({
+  label,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = () => {
     const textarea = ref.current;
     const form = textarea?.closest('form');
     if (!textarea || !form) return;
     const children = [...form.children] as HTMLElement[];
-    const fields = children.filter(child => child.classList.contains('field'));
+    const fields = children.filter((child) => child.classList.contains('field'));
     const occupied = children.reduce((height, child) => {
       if (fields.includes(child)) {
         const caption = child.querySelector<HTMLElement>('.field-name');
-        return height + (caption ? caption.offsetHeight + parseFloat(getComputedStyle(caption).marginBottom) : 0);
+        return (
+          height +
+          (caption ? caption.offsetHeight + parseFloat(getComputedStyle(caption).marginBottom) : 0)
+        );
       }
       return height + child.getBoundingClientRect().height;
     }, 0);

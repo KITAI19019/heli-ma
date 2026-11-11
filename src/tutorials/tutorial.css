@@ -1,0 +1,463 @@
+.tutorial-catalog,
+.tutorial-reader {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tutorial-cards {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 1.8dvh, 18px);
+  min-height: 0;
+  max-height: 600px;
+  margin-top: 12px;
+}
+.tutorial-card {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 28px);
+  align-items: center;
+  min-height: 0;
+  padding: 20px clamp(20px, 4vw, 36px);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  text-align: left;
+}
+.tutorial-card:hover {
+  background: var(--surface);
+}
+.tutorial-card svg {
+  width: 56px;
+  color: var(--vermilion);
+}
+.tutorial-card-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 8px;
+}
+.tutorial-card strong {
+  font: 600 clamp(22px, 3dvh, 30px) / 1.3 var(--font-display);
+  letter-spacing: 0.02em;
+}
+.tutorial-card-description {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.tutorial-reader {
+  gap: 12px;
+}
+.tutorial-step-count {
+  align-self: flex-end;
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.tutorial-progress {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.tutorial-progress span {
+  height: 2px;
+  flex: 1;
+  background: var(--hairline);
+}
+.tutorial-progress [data-complete] {
+  background: var(--vermilion);
+}
+.tutorial-step-slider {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+.tutorial-step-track {
+  display: flex;
+  height: 100%;
+  transition: transform 100ms var(--ease);
+}
+.tutorial-step-track[data-dragging] {
+  transition: none;
+  user-select: none;
+}
+.tutorial-step {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  flex: 0 0 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 0;
+  /* Keep enlarged text and very short windows readable without clipping. */
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
+}
+.tutorial-step-copy {
+  min-width: 0;
+}
+.tutorial-step-number {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--vermilion);
+  font: 36px/1 var(--font-mono);
+}
+.tutorial-step h2 {
+  font-size: clamp(23px, 2.7vw, 32px);
+  line-height: 1.4;
+  margin: 0 0 16px;
+}
+.tutorial-step h2:focus {
+  outline: none;
+}
+.tutorial-step-copy > p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.85;
+}
+.tutorial-figure {
+  --tutorial-example-text: clamp(16px, 3.3vw, 20px);
+  --tutorial-secondary-text: clamp(12px, 2.4vw, 14px);
+  --tutorial-control-text: clamp(14px, 2.8vw, 18px);
+  --tutorial-cell-text: clamp(14px, 2.8vw, 18px);
+  --tutorial-example-spacing: clamp(12px, 2.6vw, 20px);
+  min-width: 0;
+  margin: 0;
+  padding: clamp(14px, 2.8vw, 24px);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.tutorial-figure-label {
+  color: var(--muted);
+  font-size: var(--tutorial-secondary-text);
+  margin-bottom: 16px;
+}
+.tutorial-figure-content {
+  display: grid;
+  align-items: center;
+  min-height: clamp(240px, 35dvh, 360px);
+  font-size: var(--tutorial-example-text);
+  line-height: 1.6;
+}
+.tutorial-figure figcaption {
+  border-top: 1px solid var(--hairline);
+  padding-top: 12px;
+  margin-top: 16px;
+  font-size: var(--tutorial-secondary-text);
+  color: var(--ink-2);
+}
+.tutorial-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding-top: 4px;
+}
+.tutorial-pagination button {
+  min-height: 44px;
+}
+.tutorial-pagination button:disabled {
+  cursor: default;
+}
+.tutorial-example-field {
+  min-width: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  padding: var(--tutorial-example-spacing);
+  background: var(--surface);
+}
+.tutorial-field-label {
+  display: block;
+  font-size: var(--tutorial-secondary-text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+.tutorial-example-field p {
+  margin: 0 0 6px;
+}
+.tutorial-input-example {
+  display: grid;
+  gap: var(--tutorial-example-spacing);
+}
+.tutorial-input-example .tutorial-example-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 112px;
+}
+.tutorial-action-example,
+.tutorial-action-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: var(--tutorial-control-text);
+  border-radius: 9px;
+  line-height: 1.5;
+}
+.tutorial-action-example {
+  color: var(--paper);
+  background: var(--ink);
+}
+.tutorial-action-outline {
+  border: 1px solid var(--hairline-2);
+}
+.tutorial-grid {
+  display: grid;
+  gap: 6px;
+  font-size: var(--tutorial-cell-text);
+}
+.tutorial-fact-grid {
+  grid-template-columns: 32px repeat(3, minmax(0, 1fr));
+}
+.tutorial-grid-row {
+  display: contents;
+}
+.tutorial-grid-head {
+  align-self: center;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: var(--tutorial-secondary-text);
+  padding: 5px 0;
+}
+.tutorial-grid-cell {
+  display: grid;
+  place-content: center;
+  min-width: 0;
+  min-height: 80px;
+  padding: 12px 6px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  text-align: center;
+  border-radius: 7px;
+}
+.tutorial-figure [data-highlighted] {
+  border-color: var(--vermilion);
+  background: var(--vermilion-wash);
+}
+.tutorial-relation-grid {
+  grid-template-columns: 60px repeat(2, minmax(0, 1fr));
+}
+.tutorial-relation-grid .tutorial-grid-cell {
+  min-height: 112px;
+}
+.tutorial-source-example {
+  display: grid;
+  gap: var(--tutorial-example-spacing);
+}
+.tutorial-source-link {
+  display: block;
+  color: var(--vermilion);
+  font-size: var(--tutorial-secondary-text);
+  margin-top: 12px;
+}
+.tutorial-source-detail {
+  padding: var(--tutorial-example-spacing);
+  border: 1px solid var(--hairline-2);
+  border-radius: 9px;
+  background: var(--surface);
+  margin-left: 24px;
+}
+.tutorial-source-detail p {
+  margin: 0 0 10px;
+  font-size: inherit;
+}
+.tutorial-claim-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+.tutorial-diagram-arrow {
+  text-align: center;
+  color: var(--vermilion);
+  font-size: 26px;
+}
+.tutorial-reason-example {
+  width: 88%;
+  margin: 0 auto;
+}
+.tutorial-support-arrow {
+  display: block;
+  color: var(--vermilion);
+  text-align: center;
+  line-height: 1.5;
+  font-size: 26px;
+}
+.tutorial-reason-example > .tutorial-action-outline {
+  margin-top: 8px;
+}
+.tutorial-backing-example {
+  display: grid;
+  gap: var(--tutorial-example-spacing);
+}
+.tutorial-example-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--tutorial-secondary-text);
+}
+.tutorial-judgment-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.tutorial-judgment-heading strong {
+  color: var(--vermilion);
+}
+.tutorial-grade-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 24px;
+}
+.tutorial-grade-options > span {
+  font-size: var(--tutorial-secondary-text);
+  text-align: center;
+  padding: 14px 2px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+}
+.tutorial-save-note {
+  color: var(--muted);
+  margin: 10px 0 0;
+  font-size: var(--tutorial-secondary-text);
+}
+.tutorial-slider {
+  position: relative;
+  height: 6px;
+  margin: 32px 0 18px;
+  background: linear-gradient(to right, var(--vermilion) 50%, var(--hairline) 50%);
+}
+.tutorial-slider > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--vermilion);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.tutorial-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--tutorial-secondary-text);
+  color: var(--muted);
+}
+.tutorial-judgment-example > .tutorial-source-link {
+  margin-bottom: 22px;
+}
+
+@media (min-width: 1000px) and (min-height: 600px) {
+  .tutorial-catalog {
+    max-width: 860px;
+    width: 100%;
+    align-self: center;
+  }
+}
+
+@media (max-width: 700px) {
+  .tutorial-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 18px;
+    padding: 18px 20px;
+  }
+  .tutorial-card svg {
+    width: 44px;
+  }
+  .tutorial-card-description {
+    font-size: 13px;
+  }
+  .tutorial-reader {
+    gap: 8px;
+  }
+  .tutorial-step {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: start;
+    align-items: start;
+    gap: clamp(18px, 2.6dvh, 24px);
+    padding: 6px 0;
+  }
+  .tutorial-step-number {
+    display: none;
+  }
+  .tutorial-step h2 {
+    font-size: clamp(22px, 3.8vw, 26px);
+    margin-bottom: 8px;
+  }
+  .tutorial-step-copy > p {
+    font-size: clamp(14px, 2.5vw, 16px);
+    line-height: 1.7;
+  }
+  .tutorial-source-detail {
+    margin-left: 16px;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 701px) {
+  .tutorial-reader {
+    gap: 5px;
+  }
+  .tutorial-step {
+    gap: 24px;
+    padding: 4px 0;
+    align-items: start;
+  }
+  .tutorial-step-number {
+    display: none;
+  }
+  .tutorial-step h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+  .tutorial-step-copy > p {
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .tutorial-figure {
+    --tutorial-example-text: 16px;
+    --tutorial-control-text: 14px;
+    --tutorial-cell-text: 14px;
+    --tutorial-secondary-text: 12px;
+    --tutorial-example-spacing: 12px;
+    padding: 14px;
+  }
+  .tutorial-figure-content {
+    min-height: 0;
+  }
+  .tutorial-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 10px 20px;
+  }
+  .tutorial-card svg {
+    width: 40px;
+  }
+  .tutorial-cards {
+    margin: 4px 0;
+  }
+  .tutorial-card-content {
+    gap: 4px;
+  }
+  .tutorial-card strong {
+    font-size: 20px;
+  }
+  .tutorial-card-description {
+    font-size: 12px;
+  }
+}

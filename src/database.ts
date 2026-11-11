@@ -1,10 +1,21 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import { assertAnalysis, conclusionOf, inputError, isPending, titleOf, type Analysis, type HistoryItem } from './model';
+import {
+  assertAnalysis,
+  conclusionOf,
+  inputError,
+  isPending,
+  titleOf,
+  type Analysis,
+  type HistoryItem,
+} from './model';
 
 let engine: Promise<SqlJsStatic> | undefined;
 function loadEngine() {
-  engine ??= initSqlJs({ locateFile: () => wasmUrl }).catch(error => { engine = undefined; throw error; });
+  engine ??= initSqlJs({ locateFile: () => wasmUrl }).catch((error) => {
+    engine = undefined;
+    throw error;
+  });
   return engine;
 }
 function openStorage(): Promise<IDBDatabase> {
@@ -13,7 +24,8 @@ function openStorage(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => request.result.createObjectStore('sqlite');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(new Error('无法打开本地数据库。请检查浏览器的站点存储权限。'));
-    request.onblocked = () => reject(new Error('本地数据库升级被另一个窗口阻塞，请关闭旧窗口后重试。'));
+    request.onblocked = () =>
+      reject(new Error('本地数据库升级被另一个窗口阻塞，请关闭旧窗口后重试。'));
   });
 }
 function migrate(db: Database) {
@@ -41,7 +53,10 @@ async function access<T>(write: boolean, operation: (db: Database) => T): Promis
     const store = tx.objectStore('sqlite');
     let result: T;
     let failure: unknown;
-    tx.oncomplete = () => { storage.close(); resolve(result); };
+    tx.oncomplete = () => {
+      storage.close();
+      resolve(result);
+    };
     tx.onabort = () => {
       storage.close();
       reject(failure ?? new Error('保存未成功。请保留当前页面，检查本地存储空间后重试。'));
@@ -57,22 +72,31 @@ async function access<T>(write: boolean, operation: (db: Database) => T): Promis
       } catch (error) {
         failure = error;
         tx.abort();
-      } finally { db?.close(); }
+      } finally {
+        db?.close();
+      }
     };
   });
 }
 
 export function listAnalyses(): Promise<HistoryItem[]> {
-  return access(false, db => {
-    const rows = db.exec('SELECT id, kind, title, conclusion, pending, updated_at FROM analyses ORDER BY updated_at DESC, id')[0]?.values ?? [];
-    return rows.map(row => ({
-      id: String(row[0]), kind: row[1] as Analysis['kind'], title: String(row[2]),
-      conclusion: String(row[3]), pending: row[4] === 1, updatedAt: String(row[5]),
+  return access(false, (db) => {
+    const rows =
+      db.exec(
+        'SELECT id, kind, title, conclusion, pending, updated_at FROM analyses ORDER BY updated_at DESC, id',
+      )[0]?.values ?? [];
+    return rows.map((row) => ({
+      id: String(row[0]),
+      kind: row[1] as Analysis['kind'],
+      title: String(row[2]),
+      conclusion: String(row[3]),
+      pending: row[4] === 1,
+      updatedAt: String(row[5]),
     }));
   });
 }
 export function getAnalysis(id: string): Promise<Analysis> {
-  return access(false, db => {
+  return access(false, (db) => {
     const statement = db.prepare('SELECT payload FROM analyses WHERE id = ?');
     try {
       statement.bind([id]);
@@ -80,12 +104,14 @@ export function getAnalysis(id: string): Promise<Analysis> {
       const record: unknown = JSON.parse(String(statement.get()[0]));
       assertAnalysis(record);
       return record;
-    } finally { statement.free(); }
+    } finally {
+      statement.free();
+    }
   });
 }
 export function deleteAnalyses(ids: readonly string[]): Promise<void> {
   if (!ids.length) return Promise.resolve();
-  return access(true, db => {
+  return access(true, (db) => {
     for (const id of new Set(ids)) db.run('DELETE FROM analyses WHERE id = ?', [id]);
   });
 }
@@ -93,18 +119,38 @@ export function saveAnalysis(record: Analysis): Promise<Analysis> {
   assertAnalysis(record);
   const invalid = inputError(record);
   if (invalid) return Promise.reject(new Error(invalid));
-  return access(true, db => {
+  return access(true, (db) => {
     const statement = db.prepare('SELECT revision FROM analyses WHERE id = ?');
     let current = 0;
-    try { statement.bind([record.id]); if (statement.step()) current = Number(statement.get()[0]); }
-    finally { statement.free(); }
-    if (!current && record.revision > 0) throw new Error('这条记录已被删除。当前输入仍在，请先复制需要保留的内容，再新建分析。');
-    if (current !== record.revision) throw new Error('另一窗口已更新这条记录。当前输入仍在，请先复制需要保留的内容，再从历史打开最新记录。');
+    try {
+      statement.bind([record.id]);
+      if (statement.step()) current = Number(statement.get()[0]);
+    } finally {
+      statement.free();
+    }
+    if (!current && record.revision > 0)
+      throw new Error('这条记录已被删除。当前输入仍在，请先复制需要保留的内容，再新建分析。');
+    if (current !== record.revision)
+      throw new Error(
+        '另一窗口已更新这条记录。当前输入仍在，请先复制需要保留的内容，再从历史打开最新记录。',
+      );
     const saved = { ...record, revision: current + 1, updatedAt: new Date().toISOString() };
-    db.run(`INSERT INTO analyses VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    db.run(
+      `INSERT INTO analyses VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET title=excluded.title, conclusion=excluded.conclusion,
       pending=excluded.pending, payload=excluded.payload, revision=excluded.revision, updated_at=excluded.updated_at`,
-    [saved.id, saved.kind, titleOf(saved), conclusionOf(saved), Number(isPending(saved)), JSON.stringify(saved), saved.revision, saved.createdAt, saved.updatedAt]);
+      [
+        saved.id,
+        saved.kind,
+        titleOf(saved),
+        conclusionOf(saved),
+        Number(isPending(saved)),
+        JSON.stringify(saved),
+        saved.revision,
+        saved.createdAt,
+        saved.updatedAt,
+      ],
+    );
     return saved;
   });
 }

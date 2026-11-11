@@ -23,8 +23,14 @@ export function useBrowserBack(enabled: boolean, onBack: () => void | Promise<vo
     let handling = false;
     let disposed = false;
     const arm = () => {
-      if (current === 0) { window.history.pushState(entry('buffer'), ''); current = 1; }
-      if (current === 1) { window.history.pushState(entry('guard'), ''); current = 2; }
+      if (current === 0) {
+        window.history.pushState(entry('buffer'), '');
+        current = 1;
+      }
+      if (current === 1) {
+        window.history.pushState(entry('guard'), '');
+        current = 2;
+      }
     };
     const sync = () => {
       if (disposed || retiring) return;
@@ -38,21 +44,34 @@ export function useBrowserBack(enabled: boolean, onBack: () => void | Promise<vo
       if (!state()) return;
       const previous = current;
       current = position();
-      if (retiring) { retiring = false; sync(); return; }
-      if (current >= previous || !latest.current.enabled) { sync(); return; }
+      if (retiring) {
+        retiring = false;
+        sync();
+        return;
+      }
+      if (current >= previous || !latest.current.enabled) {
+        sync();
+        return;
+      }
       // Protect a second rapid gesture while navigation/save/confirmation runs.
       arm();
       if (handling) return;
       handling = true;
-      void Promise.resolve().then(() => latest.current.onBack()).finally(() => {
-        handling = false;
-        sync();
-      });
+      void Promise.resolve()
+        .then(() => latest.current.onBack())
+        .finally(() => {
+          handling = false;
+          sync();
+        });
     };
     synchronize.current = sync;
     window.addEventListener('popstate', pop);
     sync();
-    return () => { disposed = true; window.removeEventListener('popstate', pop); synchronize.current = () => {}; };
+    return () => {
+      disposed = true;
+      window.removeEventListener('popstate', pop);
+      synchronize.current = () => {};
+    };
   }, []);
   useLayoutEffect(() => synchronize.current());
 }

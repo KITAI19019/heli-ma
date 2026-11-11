@@ -7,7 +7,10 @@ export function useViewport() {
     const viewport = window.visualViewport;
     const update = () => {
       if (viewport && viewport.scale !== 1) return;
-      document.documentElement.style.setProperty('--viewport-height', `${viewport?.height ?? innerHeight}px`);
+      document.documentElement.style.setProperty(
+        '--viewport-height',
+        `${viewport?.height ?? innerHeight}px`,
+      );
       document.documentElement.style.setProperty('--viewport-top', `${viewport?.offsetTop ?? 0}px`);
     };
     update();
@@ -26,19 +29,30 @@ export function useViewport() {
 
 export function useFittedDescriptions(page: string) {
   useLayoutEffect(() => {
-    const cards = [...document.querySelectorAll<HTMLElement>('.type-card, .matrix-head, .matrix-rowhead')];
-    const update = () => cards.forEach(card => {
-      card.removeAttribute('data-compact');
-      const body = card.querySelector<HTMLElement>('.method-body');
-      const style = getComputedStyle(card);
-      const available = card.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-      const secondary = card.querySelector<HTMLElement>('small');
-      const box = card.getBoundingClientRect();
-      const text = secondary?.getBoundingClientRect();
-      if ((body && body.scrollHeight > available + 1) || (text && (text.top < box.top || text.bottom > box.bottom || card.scrollHeight > card.clientHeight + 1))) card.dataset.compact = 'true';
-    });
+    const cards = [
+      ...document.querySelectorAll<HTMLElement>('.type-card, .matrix-head, .matrix-rowhead'),
+    ];
+    const update = () =>
+      cards.forEach((card) => {
+        card.removeAttribute('data-compact');
+        const body = card.querySelector<HTMLElement>('.method-body');
+        const style = getComputedStyle(card);
+        const available =
+          card.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        const secondary = card.querySelector<HTMLElement>('small');
+        const box = card.getBoundingClientRect();
+        const text = secondary?.getBoundingClientRect();
+        if (
+          (body && body.scrollHeight > available + 1) ||
+          (text &&
+            (text.top < box.top ||
+              text.bottom > box.bottom ||
+              card.scrollHeight > card.clientHeight + 1))
+        )
+          card.dataset.compact = 'true';
+      });
     const observer = new ResizeObserver(update);
-    cards.forEach(card => observer.observe(card));
+    cards.forEach((card) => observer.observe(card));
     update();
     return () => observer.disconnect();
   }, [page]);

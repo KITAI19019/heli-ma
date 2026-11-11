@@ -5,6 +5,7 @@
 !/.gitignore
 !/.gitattributes
 !/.nvmrc
+!/.prettierrc.json
 !/README.md
 !/index.html
 !/package.json

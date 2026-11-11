@@ -2,14 +2,16 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
 const files = (await readdir('dist', { recursive: true, withFileTypes: true }))
-  .filter(entry => entry.isFile() && entry.name !== 'sw.js')
-  .map(entry => `${entry.parentPath}/${entry.name}`.replaceAll('\\', '/'));
+  .filter((entry) => entry.isFile() && entry.name !== 'sw.js')
+  .map((entry) => `${entry.parentPath}/${entry.name}`.replaceAll('\\', '/'));
 const hash = createHash('sha256');
 hash.update(await readFile(import.meta.filename));
 for (const file of files.sort()) hash.update(await readFile(file));
 const version = hash.digest('hex').slice(0, 16);
-const assets = files.map(file => './' + file.replace(/^dist\//, ''));
-await writeFile('dist/sw.js', `
+const assets = files.map((file) => './' + file.replace(/^dist\//, ''));
+await writeFile(
+  'dist/sw.js',
+  `
 const CACHE = 'heli-v01-${version}';
 const ASSETS = ${JSON.stringify(assets)};
 self.addEventListener('install', event => {
@@ -36,5 +38,6 @@ self.addEventListener('fetch', event => {
     return await cache.match(request, { ignoreVary: true }) || fetch(request);
   })());
 });
-`);
+`,
+);
 console.log(`Offline cache ${version}, ${assets.length} files including SQLite WASM.`);
