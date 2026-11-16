@@ -24,8 +24,12 @@ export function Assistant({
   const composer = useRef<HTMLTextAreaElement>(null);
   const messages = useRef<HTMLDivElement>(null);
   const orbButton = useRef<HTMLButtonElement>(null);
-  const orb = useOrb(value.position, 48 * value.scale, (position) =>
-    settings.update((current) => ({ ...current, position })),
+  const orb = useOrb(
+    value.position,
+    48 * value.scale,
+    (position) => settings.update((current) => ({ ...current, position })),
+    orbButton,
+    value.enabled && !open,
   );
   const configured = !!profile.apiKey.trim() && !!profile.model;
   useEffect(() => {
@@ -53,6 +57,7 @@ export function Assistant({
         type="button"
         hidden={open}
         className="ai-orb"
+        data-dragging={orb.dragging || undefined}
         aria-label="打开 AI 助手"
         title="点击交流，拖动调整位置"
         style={orb.style}
@@ -60,6 +65,7 @@ export function Assistant({
         onPointerMove={orb.onPointerMove}
         onPointerUp={orb.onPointerUp}
         onPointerCancel={orb.onPointerCancel}
+        onLostPointerCapture={orb.onLostPointerCapture}
         onClick={() => {
           if (orb.consumeDrag()) return;
           flushSync(onOpen);

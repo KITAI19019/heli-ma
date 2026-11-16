@@ -272,6 +272,12 @@
   touch-action: none;
   user-select: none;
   cursor: grab;
+  transition:
+    left 420ms var(--ease),
+    top 420ms var(--ease);
+}
+.ai-orb[data-dragging] {
+  transition: none;
 }
 .ai-orb:hover,
 .ai-orb:active {
@@ -430,6 +436,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .ai-orb {
+    transition: none;
+  }
   .ai-toggle-switch,
   .ai-toggle-switch::before {
     transition: none;

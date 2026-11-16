@@ -9,6 +9,7 @@ export const orbMotion = {
   blinkMinDelay: 2800,
   blinkMaxDelay: 7000,
   blinkDuration: 180,
+  touchReleaseDelay: 650,
 } as const;
 
 type Point = { x: number; y: number };
@@ -28,6 +29,9 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
     let lastFrame = 0;
     let blinkTimer = 0;
     let blinkEnd = 0;
+    let touchEnd = 0;
+    let touchId: number | null = null;
+    const moving = new Set<string>();
     const active = () => inView && !document.hidden;
 
     function paint() {
@@ -44,13 +48,13 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
     }
 
     function scheduleBlink() {
-      if (!active() || tracking || reducedMotion || blinkTimer || blinkEnd) return;
+      if (!active() || reducedMotion || blinkTimer || blinkEnd) return;
       const delay =
         orbMotion.blinkMinDelay +
         Math.random() * (orbMotion.blinkMaxDelay - orbMotion.blinkMinDelay);
       blinkTimer = window.setTimeout(() => {
         blinkTimer = 0;
-        if (!active() || tracking || reducedMotion) return;
+        if (!active() || reducedMotion) return;
         face!.dataset.blinking = 'true';
         blinkEnd = window.setTimeout(() => {
           blinkEnd = 0;
@@ -64,8 +68,6 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
       if (next === tracking) return;
       tracking = next;
       face!.dataset.tracking = String(next);
-      if (next) stopBlink();
-      else scheduleBlink();
     }
 
     function animate(now: number) {
@@ -99,7 +101,7 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
       const settled = Math.hypot(target.x - current.x, target.y - current.y) < 0.015;
       if (settled) current = target;
       paint();
-      if (!settled) frame = requestAnimationFrame(animate);
+      if (!settled || moving.size) frame = requestAnimationFrame(animate);
       else lastFrame = 0;
     }
 
@@ -108,22 +110,42 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
     }
 
     function resetPointer() {
+      clearTimeout(touchEnd);
+      touchEnd = 0;
+      touchId = null;
       pointer = null;
       updateTracking(false);
       wake();
     }
 
     function move(event: PointerEvent) {
-      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') {
-        if (pointer) resetPointer();
-        return;
-      }
+      if (!event.isPrimary) return;
+      clearTimeout(touchEnd);
+      touchId = event.pointerType === 'touch' ? event.pointerId : null;
       pointer = { x: event.clientX, y: event.clientY };
       wake();
     }
 
+    function release(event: PointerEvent) {
+      if (event.pointerType !== 'touch' || event.pointerId !== touchId) return;
+      // A quick tap stays visible briefly; moving and holding use the same gaze as a mouse.
+      clearTimeout(touchEnd);
+      touchEnd = window.setTimeout(resetPointer, orbMotion.touchReleaseDelay);
+    }
+
+    function cancel(event: PointerEvent) {
+      if (event.isPrimary) resetPointer();
+    }
+
     function leaveWindow(event: PointerEvent) {
-      if (!event.relatedTarget) resetPointer();
+      if (event.pointerType !== 'touch' && !event.relatedTarget) resetPointer();
+    }
+
+    function positionTransition(event: TransitionEvent) {
+      if (event.target !== orb || !['left', 'top'].includes(event.propertyName)) return;
+      if (event.type === 'transitionrun') moving.add(event.propertyName);
+      else moving.delete(event.propertyName);
+      wake();
     }
 
     function synchronize() {
@@ -134,8 +156,8 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
         cancelAnimationFrame(frame);
         frame = 0;
         lastFrame = 0;
-        pointer = null;
-        updateTracking(false);
+        resetPointer();
+        moving.clear();
         stopBlink();
         current = { x: 0, y: 0 };
         paint();
@@ -156,28 +178,44 @@ export function useOrbFace(ref: RefObject<HTMLSpanElement | null>) {
       synchronize();
     });
     const resize = new ResizeObserver(wake);
+    const orb = face.closest('.ai-orb');
     visibility.observe(face);
     resize.observe(face);
-    window.addEventListener('pointermove', move, { passive: true });
+    window.addEventListener('pointerdown', move, { passive: true, capture: true });
+    window.addEventListener('pointermove', move, { passive: true, capture: true });
+    window.addEventListener('pointerup', release, { passive: true, capture: true });
+    window.addEventListener('pointercancel', cancel, { passive: true, capture: true });
     window.addEventListener('pointerout', leaveWindow, { passive: true });
     window.addEventListener('blur', resetPointer);
     window.addEventListener('resize', wake);
     window.addEventListener('scroll', wake, true);
+    window.visualViewport?.addEventListener('resize', wake);
+    window.visualViewport?.addEventListener('scroll', wake);
     document.addEventListener('visibilitychange', synchronize);
     motionPreference.addEventListener('change', preferenceChanged);
+    for (const event of ['transitionrun', 'transitionend', 'transitioncancel'])
+      orb?.addEventListener(event, positionTransition as EventListener);
 
     return () => {
       cancelAnimationFrame(frame);
       stopBlink();
+      clearTimeout(touchEnd);
       visibility.disconnect();
       resize.disconnect();
-      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerdown', move, true);
+      window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', release, true);
+      window.removeEventListener('pointercancel', cancel, true);
       window.removeEventListener('pointerout', leaveWindow);
       window.removeEventListener('blur', resetPointer);
       window.removeEventListener('resize', wake);
       window.removeEventListener('scroll', wake, true);
+      window.visualViewport?.removeEventListener('resize', wake);
+      window.visualViewport?.removeEventListener('scroll', wake);
       document.removeEventListener('visibilitychange', synchronize);
       motionPreference.removeEventListener('change', preferenceChanged);
+      for (const event of ['transitionrun', 'transitionend', 'transitioncancel'])
+        orb?.removeEventListener(event, positionTransition as EventListener);
     };
   }, [ref]);
 }

@@ -69,7 +69,7 @@ export function readAiSettings(): AiSettings {
   ) as Record<ProviderId, ServiceProfile>;
   const position = object(saved.position);
   return {
-    enabled: saved.enabled === true,
+    enabled: typeof saved.enabled === 'boolean' ? saved.enabled : true,
     provider: providers.some((p) => p.id === saved.provider)
       ? (saved.provider as ProviderId)
       : 'deepseek',
