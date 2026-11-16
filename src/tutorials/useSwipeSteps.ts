@@ -24,6 +24,7 @@ export function useSwipeSteps(count: number) {
 
   function startSwipe(event: PointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.pointerType === 'mouse') return;
+    if (event.target instanceof Element && event.target.closest('a, button')) return;
     gesture.current = {
       pointerId: event.pointerId,
       startX: event.clientX,

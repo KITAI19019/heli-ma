@@ -9,7 +9,7 @@
 .tutorial-cards {
   flex: 1;
   display: grid;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: clamp(10px, 1.8dvh, 18px);
   min-height: 0;
   max-height: 600px;
@@ -363,6 +363,180 @@
   margin-bottom: 22px;
 }
 
+.tutorial-official-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--vermilion);
+  font-size: 14px;
+  text-underline-offset: 4px;
+}
+.tutorial-figure[data-screenshot] .tutorial-figure-content {
+  min-height: 0;
+}
+.tutorial-image-button {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: right;
+  color: var(--ink-2);
+  cursor: zoom-in;
+}
+.tutorial-image-button:hover {
+  background: transparent;
+  color: var(--vermilion);
+}
+.tutorial-image-button img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 48dvh;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.tutorial-image-button > span {
+  font-size: var(--tutorial-secondary-text);
+}
+.tutorial-image-dialog {
+  width: min(1200px, calc(100vw - 24px));
+  height: min(940px, calc(100dvh - 24px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.tutorial-image-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.tutorial-image-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.tutorial-image-toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14px;
+}
+.tutorial-image-toolbar > span {
+  flex: 1;
+}
+.tutorial-image-toolbar button {
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.tutorial-image-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.tutorial-image-viewport img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.tutorial-image-viewport[data-zoomed] img {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin-inline: auto;
+}
+.tutorial-ai-location,
+.tutorial-ai-remember,
+.tutorial-ai-ready {
+  font-size: var(--tutorial-secondary-text);
+  color: var(--ink-2);
+}
+.tutorial-ai-select,
+.tutorial-ai-toggle,
+.tutorial-ai-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tutorial-ai-select > span {
+  color: var(--muted);
+}
+.tutorial-ai-secret {
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+.tutorial-ai-toggle {
+  padding: var(--tutorial-example-spacing) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.tutorial-switch-example {
+  position: relative;
+  width: 46px;
+  height: 28px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--vermilion);
+}
+.tutorial-switch-example::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 4px;
+  right: 4px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+.tutorial-ai-ready,
+.tutorial-ai-chat-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tutorial-assistant-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--vermilion);
+}
+.tutorial-assistant-mark i {
+  width: 4px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--paper);
+}
+.tutorial-ai-prompt {
+  line-height: 1.8;
+}
+.tutorial-ai-review-actions {
+  flex-wrap: wrap;
+}
+.tutorial-ai-checklist {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.tutorial-ai-checklist li + li {
+  margin-top: 8px;
+}
+
 @media (min-width: 1000px) and (min-height: 600px) {
   .tutorial-catalog {
     max-width: 860px;
@@ -450,6 +624,8 @@
   }
   .tutorial-cards {
     margin: 4px 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
   }
   .tutorial-card-content {
     gap: 4px;
@@ -459,5 +635,30 @@
   }
   .tutorial-card-description {
     font-size: 12px;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 700px) {
+  .tutorial-cards {
+    margin-top: 4px;
+    gap: 8px;
+  }
+  .tutorial-card {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 12px;
+    padding: 8px 14px;
+  }
+  .tutorial-card svg {
+    width: 32px;
+  }
+  .tutorial-card strong {
+    font-size: 20px;
+  }
+  .tutorial-card-content {
+    gap: 4px;
+  }
+  .tutorial-card-description {
+    font-size: 12px;
+    line-height: 1.45;
   }
 }

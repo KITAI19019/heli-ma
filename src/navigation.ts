@@ -1,18 +1,19 @@
 import { kindNames, type Kind } from './model';
 
 export type WorkflowPage = 'home' | 'input' | 'analysis' | 'history' | 'result';
-export type UtilityPage = 'tutorial' | 'language' | 'theme';
+export type UtilityPage = 'tutorial' | 'language' | 'theme' | 'ai';
 export type Page = WorkflowPage | UtilityPage;
 
-export const utilityPages: readonly UtilityPage[] = ['tutorial', 'language', 'theme'];
+export const utilityPages: readonly UtilityPage[] = ['tutorial', 'language', 'theme', 'ai'];
 export const utilityLabels: Record<UtilityPage, string> = {
   tutorial: '教程',
   language: '语言',
   theme: '主题',
+  ai: 'AI 配置',
 };
 
 export function isUtilityPage(page: Page): page is UtilityPage {
-  return page === 'tutorial' || page === 'language' || page === 'theme';
+  return page === 'tutorial' || page === 'language' || page === 'theme' || page === 'ai';
 }
 export const workflowReturnLabels: Record<WorkflowPage, string> = {
   home: '返回首页',

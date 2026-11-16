@@ -7,6 +7,7 @@
 !/.nvmrc
 !/.prettierrc.json
 !/README.md
+!/API.md
 !/index.html
 !/package.json
 !/package-lock.json
@@ -35,3 +36,10 @@
 **/*.sqlite
 **/*.sqlite3
 **/*.db
+**/*.pem
+**/*.key
+**/credentials.json
+**/secrets.json
+**/fixtures/
+**/test-results/
+**/playwright-report/

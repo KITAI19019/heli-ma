@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react';
 import { grades, levels, times, type Kind } from '../model';
-import { tutorialExamples, type TutorialIllustration as Illustration } from './content';
+import {
+  tutorialExamples,
+  type TutorialIllustration as Illustration,
+  type TutorialKind,
+} from './content';
+import { AiTutorialIllustration } from './AiTutorialIllustration';
 
 function ExampleField({
   label,
@@ -198,8 +203,9 @@ export function TutorialIllustration({
   kind,
 }: {
   illustration: Illustration;
-  kind: Kind;
+  kind: TutorialKind;
 }) {
+  if (kind === 'ai') return <AiTutorialIllustration illustration={illustration} />;
   switch (illustration) {
     case 'input':
       return <InputIllustration kind={kind} />;
@@ -220,11 +226,16 @@ export function TutorialIllustration({
   }
 }
 
-export function TutorialIcon({ kind }: { kind: Kind }) {
+export function TutorialIcon({ kind }: { kind: TutorialKind }) {
   const size = kind === 'fact' ? 3 : 2;
   return (
     <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-      {kind === 'claim' ? (
+      {kind === 'ai' ? (
+        <>
+          <circle cx="32" cy="32" r="25" fill="currentColor" fillOpacity=".12" />
+          <path d="M24 27v10m16-10v10" strokeWidth="4" strokeLinecap="round" />
+        </>
+      ) : kind === 'claim' ? (
         <>
           <rect x="5" y="8" width="20" height="15" rx="2" />
           <rect x="39" y="8" width="20" height="15" rx="2" />

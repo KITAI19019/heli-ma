@@ -30,6 +30,12 @@ function MenuIcon({ page }: { page: UtilityPage }) {
           <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
         </>
       )}
+      {page === 'ai' && (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M9 10v3m6-3v3" strokeWidth="2.5" />
+        </>
+      )}
     </svg>
   );
 }

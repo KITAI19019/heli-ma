@@ -1,13 +1,13 @@
 import { useLayoutEffect, useRef } from 'react';
-import { kindNames, type Kind } from '../model';
-import { tutorialKinds, tutorials } from './content';
+import { tutorialKinds, tutorialNames, tutorials, type TutorialKind } from './content';
 import { TutorialIcon, TutorialIllustration } from './TutorialIllustration';
+import { TutorialImage } from './TutorialImage';
 import { useSwipeSteps } from './useSwipeSteps';
 import './tutorial.css';
 
 interface TutorialPageProps {
-  kind: Kind | null;
-  onSelect: (kind: Kind) => void;
+  kind: TutorialKind | null;
+  onSelect: (kind: TutorialKind) => void;
   onReturn: () => void;
   returnLabel: string;
 }
@@ -20,7 +20,7 @@ function TutorialCatalog({ onSelect }: Pick<TutorialPageProps, 'onSelect'>) {
           <button className="tutorial-card" key={kind} onClick={() => onSelect(kind)}>
             <TutorialIcon kind={kind} />
             <span className="tutorial-card-content">
-              <strong>{kindNames[kind]}</strong>
+              <strong>{tutorialNames[kind]}</strong>
               <span className="tutorial-card-description">{tutorials[kind].description}</span>
             </span>
           </button>
@@ -34,7 +34,7 @@ function TutorialReader({
   kind,
   onReturn,
   returnLabel,
-}: Omit<TutorialPageProps, 'onSelect'> & { kind: Kind }) {
+}: Omit<TutorialPageProps, 'onSelect'> & { kind: TutorialKind }) {
   const tutorial = tutorials[kind];
   const { stepIndex, dragOffset, dragging, goToStep, swipeHandlers } = useSwipeSteps(
     tutorial.steps.length,
@@ -87,11 +87,27 @@ function TutorialReader({
                   {step.title}
                 </h2>
                 <p>{step.instruction}</p>
+                {step.link && (
+                  <a
+                    className="tutorial-official-link"
+                    href={step.link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {step.link.label}
+                  </a>
+                )}
               </div>
-              <figure className="tutorial-figure">
-                <div className="tutorial-figure-label">操作示意</div>
+              <figure className="tutorial-figure" data-screenshot={!!step.screenshot || undefined}>
+                <div className="tutorial-figure-label">
+                  {step.screenshot ? 'DeepSeek 官方平台' : '操作示意'}
+                </div>
                 <div className="tutorial-figure-content">
-                  <TutorialIllustration illustration={step.illustration} kind={kind} />
+                  {step.screenshot ? (
+                    <TutorialImage image={step.screenshot} />
+                  ) : (
+                    <TutorialIllustration illustration={step.illustration} kind={kind} />
+                  )}
                 </div>
                 <figcaption>{step.caption}</figcaption>
               </figure>

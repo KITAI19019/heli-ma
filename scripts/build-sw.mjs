@@ -29,6 +29,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (request.headers.has('Authorization') || request.cache === 'no-store') return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     if (request.mode === 'navigate') return await cache.match('./index.html') || fetch(request);

@@ -1,5 +1,8 @@
 // @refresh reset
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { AppApiError, connectAppApi, type NavigateOptions } from './api';
+import { pathFor, type Route } from './api/routes';
 import { deleteAnalyses, getAnalysis, listAnalyses, saveAnalysis } from './database';
 import { readDraft, writeDraft } from './draft';
 import { AnalysisEditor, Judgment } from './Editors';
@@ -37,14 +40,19 @@ import {
   type WorkflowPage,
 } from './navigation';
 import { TutorialPage } from './tutorials/TutorialPage';
-import { tutorials } from './tutorials/content';
+import { tutorials, type TutorialKind } from './tutorials/content';
+import { useAiSettings } from './ai/useAiSettings';
+import { AiSettingsPage } from './ai/AiSettingsPage';
+import { Assistant } from './ai/Assistant';
 
 const initial = readDraft();
 export default function App() {
   useViewport();
   const appearance = useAppearance();
   const [draft, setDraft] = useState<Draft | null>(initial.draft);
-  const [page, setPage] = useState<Page>(initial.draft?.screen ?? 'home');
+  const [page, setPageState] = useState<Page>(initial.draft?.screen ?? 'home');
+  const [aiOpen, setAiOpen] = useState(false);
+  const ai = useAiSettings(page === 'ai');
   const [result, setResult] = useState<Analysis | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [error, setError] = useState(initial.error);
@@ -54,7 +62,7 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState<InstallPrompt | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [utilityClosing, setUtilityClosing] = useState(false);
-  const [tutorialKind, setTutorialKind] = useState<Kind | null>(null);
+  const [tutorialKind, setTutorialKind] = useState<TutorialKind | null>(null);
   const [tutorialFromCatalog, setTutorialFromCatalog] = useState(false);
   const [discardRequest, setDiscardRequest] = useState<DiscardRequest | null>(null);
   const [editingHistory, setEditingHistory] = useState(false);
@@ -67,6 +75,38 @@ export default function App() {
   const heading = useRef<HTMLHeadingElement>(null);
   const utilityHeading = useRef<HTMLHeadingElement>(null);
   const tutorialTransitionPending = useRef(false);
+  const draftVersion = useRef(0);
+  const navigationVersion = useRef(0);
+  const utilityExitDone = useRef<(() => void) | null>(null);
+
+  function setPage(next: Page) {
+    navigationVersion.current += 1;
+    setPageState(next);
+  }
+
+  useLayoutEffect(() =>
+    connectAppApi({
+      read: () => ({
+        page,
+        path: pathFor(
+          page,
+          page === 'tutorial' ? tutorialKind : (draft?.analysis.kind ?? null),
+          result?.id ?? null,
+        ),
+        busy: busy || saving.current || utilityClosing || tutorialTransitionPending.current,
+        overlayOpen:
+          sidebarOpen || discardRequest !== null || !!document.querySelector('dialog[open]'),
+        draftToken: draft ? { id: draft.analysis.id, version: draftVersion.current } : null,
+        draft,
+        result,
+        history,
+        cacheError,
+      }),
+      write: updateAnalysis,
+      navigate: navigateApi,
+      back,
+    }),
+  );
 
   useEffect(() => {
     void prepareOffline(setOfflineStatus);
@@ -88,14 +128,32 @@ export default function App() {
   }, [page, tutorialKind]);
 
   function updateDraft(next: Draft | null) {
+    draftVersion.current += 1;
     setDraft(next);
     setCacheError(writeDraft(next));
   }
   function updateAnalysis(analysis: Analysis) {
-    if (draft) updateDraft({ ...draft, analysis });
+    if (draft) {
+      const next =
+        analysis.kind === 'fact'
+          ? {
+              ...analysis,
+              cells: analysis.cells.map((cell, index) =>
+                index === 4 ? { ...cell, text: analysis.statement } : cell,
+              ),
+            }
+          : analysis;
+      updateDraft({ ...draft, analysis: next });
+    }
   }
-  function navigate(next: WorkflowPage, update: () => void = () => {}, trail?: WorkflowPage[]) {
+  function navigate(
+    next: WorkflowPage,
+    update: () => void = () => {},
+    trail?: WorkflowPage[],
+    canApply: () => boolean = () => true,
+  ) {
     return transitionWorkflow(() => {
+      if (!canApply()) return;
       if (trail) backTrail.current = trail;
       else if (next !== page && !isUtilityPage(page)) backTrail.current.push(page);
       update();
@@ -121,7 +179,7 @@ export default function App() {
     });
   }
   function confirmDiscard(request: DiscardRequest) {
-    if (draft) setDiscardRequest(request);
+    if (draft) flushSync(() => setDiscardRequest(request));
     else request.onConfirm();
   }
   function start(kind: Kind) {
@@ -143,14 +201,14 @@ export default function App() {
       },
     });
   }
-  function changeTutorialPage(update: () => void) {
+  async function changeTutorialPage(update: () => void) {
     if (tutorialTransitionPending.current) return;
     tutorialTransitionPending.current = true;
-    void transitionWorkflow(update).finally(() => {
+    await transitionWorkflow(update).finally(() => {
       tutorialTransitionPending.current = false;
     });
   }
-  function openUtility(next: UtilityPage, kind: Kind | null = null) {
+  async function openUtility(next: UtilityPage, kind: TutorialKind | null = null) {
     const update = () => {
       if (!isUtilityPage(page)) utilityReturn.current = page;
       setTutorialKind(kind);
@@ -159,25 +217,28 @@ export default function App() {
       setSidebarOpen(false);
       setPage(next);
     };
-    if (next === 'tutorial') changeTutorialPage(update);
-    else update();
+    if (next === 'tutorial') await changeTutorialPage(update);
+    else flushSync(update);
   }
-  function openTutorialFromCatalog(kind: Kind) {
-    changeTutorialPage(() => {
+  function openTutorialFromCatalog(kind: TutorialKind) {
+    return changeTutorialPage(() => {
       setTutorialKind(kind);
       setTutorialFromCatalog(true);
     });
   }
   function openTutorialCatalog() {
-    changeTutorialPage(() => setTutorialKind(null));
+    return changeTutorialPage(() => setTutorialKind(null));
   }
-  function returnFromUtility() {
+  async function returnFromUtility() {
     if (page === 'tutorial') {
-      if (tutorialKind && tutorialFromCatalog) openTutorialCatalog();
-      else changeTutorialPage(() => setPage(utilityReturn.current));
+      if (tutorialKind && tutorialFromCatalog) await openTutorialCatalog();
+      else await changeTutorialPage(() => setPage(utilityReturn.current));
       return;
     }
-    setUtilityClosing(true);
+    await new Promise<void>((resolve) => {
+      utilityExitDone.current = resolve;
+      setUtilityClosing(true);
+    });
   }
   function editResult() {
     if (!result) return;
@@ -198,7 +259,7 @@ export default function App() {
     await installPrompt.userChoice;
     setInstallPrompt(null);
   }
-  function analyze() {
+  async function analyze() {
     if (!draft) return;
     const invalid = inputError(draft.analysis);
     if (invalid) {
@@ -210,7 +271,7 @@ export default function App() {
       analysis.cells = analysis.cells.map((cell, i) =>
         i === 4 ? { ...cell, text: analysis.statement } : cell,
       );
-    void navigate('analysis', () => {
+    await navigate('analysis', () => {
       updateDraft({ analysis, screen: 'analysis' });
       setError('');
     });
@@ -273,6 +334,124 @@ export default function App() {
       setBusy(false);
     }
   }
+
+  async function navigateApi(route: Route, options: NavigateOptions) {
+    const utility = isUtilityPage(route.page);
+    if (utility) {
+      const target = route as Extract<Route, { page: UtilityPage }>;
+      if (target.page === 'tutorial' && page === 'tutorial') {
+        if (target.kind && !tutorialKind) await openTutorialFromCatalog(target.kind);
+        else await changeTutorialPage(() => setTutorialKind(target.kind ?? null));
+      } else
+        await openUtility(target.page, target.page === 'tutorial' ? (target.kind ?? null) : null);
+      return;
+    }
+
+    const keepsDraft =
+      route.page === 'analysis' ||
+      (route.page === 'input' && (!route.kind || route.kind === draft?.analysis.kind));
+    if (draft && !keepsDraft && !options.discardDraft)
+      throw new AppApiError(
+        'UNSAVED_CHANGES',
+        '当前有未保存草稿。保留草稿，或明确传入 discardDraft: true。',
+      );
+
+    const draftAtStart = draftVersion.current;
+    const navigationAtStart = navigationVersion.current;
+    async function go(next: WorkflowPage, update: () => void, trail?: WorkflowPage[]) {
+      let stale = false;
+      await navigate(next, update, trail, () => {
+        stale =
+          draftAtStart !== draftVersion.current || navigationAtStart !== navigationVersion.current;
+        return !stale;
+      });
+      if (stale) throw new AppApiError('STALE_DRAFT', '跳转期间页面或草稿已变化，请重试。');
+    }
+
+    if (route.page === 'analysis') {
+      const resultVisible =
+        page === 'result' || (isUtilityPage(page) && utilityReturn.current === 'result');
+      const analysis = draft?.analysis ?? (resultVisible ? result : null);
+      if (!analysis)
+        throw new AppApiError(
+          'NO_DRAFT',
+          '请先进入 /input/fact、/input/relation 或 /input/claim。',
+        );
+      const invalid = inputError(analysis);
+      if (invalid) throw new AppApiError('INVALID_ARGUMENT', invalid);
+      if (page === 'analysis') return;
+      await go('analysis', () => {
+        updateDraft({ analysis: structuredClone(analysis), screen: 'analysis' });
+        setError('');
+      });
+      return;
+    }
+    if (route.page === 'input') {
+      if (!draft && !route.kind) throw new AppApiError('NO_DRAFT', '请在路径中指定分析类型。');
+      const isNew = !draft || (route.kind !== undefined && route.kind !== draft.analysis.kind);
+      const analysis = isNew ? newAnalysis(route.kind!) : draft!.analysis;
+      if (!isNew && page === 'input') return;
+      await go(
+        'input',
+        () => {
+          if (isNew) {
+            setResult(null);
+            resultReturn.current = 'home';
+          }
+          updateDraft({ analysis, screen: 'input' });
+          setError('');
+        },
+        isNew ? ['home'] : undefined,
+      );
+      return;
+    }
+    if (route.page === 'home') {
+      if (page === 'home' && !draft) return;
+      await go(
+        'home',
+        () => {
+          updateDraft(null);
+          setResult(null);
+          setError('');
+        },
+        [],
+      );
+      return;
+    }
+
+    // Read before leaving the draft. A failed/stale lookup must not discard input.
+    flushSync(() => setBusy(true));
+    try {
+      const record = route.page === 'result' ? await getAnalysis(route.id) : null;
+      const items = route.page === 'history' ? await listAnalyses() : [];
+      if (record) {
+        await go(
+          'result',
+          () => {
+            updateDraft(null);
+            setResult(record);
+            resultReturn.current = 'history';
+            setError('');
+          },
+          ['home', 'history'],
+        );
+      } else {
+        await go(
+          'history',
+          () => {
+            updateDraft(null);
+            setResult(null);
+            setHistory(items);
+            setEditingHistory(false);
+            setError('');
+          },
+          ['home'],
+        );
+      }
+    } finally {
+      flushSync(() => setBusy(false));
+    }
+  }
   function requestDelete(items: HistoryItem[]) {
     if (!items.length || busy) return;
     const title = items[0].title.length > 80 ? `${items[0].title.slice(0, 80)}…` : items[0].title;
@@ -312,20 +491,20 @@ export default function App() {
     const dialogs = document.querySelectorAll<HTMLDialogElement>('dialog[open]');
     const dialog = dialogs[dialogs.length - 1];
     if (dialog) {
-      dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+      flushSync(() => dialog.dispatchEvent(new Event('cancel', { cancelable: true })));
       return;
     }
     if (busy || utilityClosing || tutorialTransitionPending.current) return;
     if (sidebarOpen) {
-      setSidebarOpen(false);
+      flushSync(() => setSidebarOpen(false));
       return;
     }
     if (isUtilityPage(page)) {
-      returnFromUtility();
+      await returnFromUtility();
       return;
     }
     if (page === 'history' && editingHistory) {
-      setEditingHistory(false);
+      flushSync(() => setEditingHistory(false));
       return;
     }
     const trail = backTrail.current.slice(0, -1);
@@ -368,7 +547,13 @@ export default function App() {
       });
     } else await leave();
   }
-  useBrowserBack(page !== 'home' || sidebarOpen || discardRequest !== null, back);
+  useBrowserBack(page !== 'home' || sidebarOpen || discardRequest !== null || aiOpen, () => {
+    if (aiOpen && !document.querySelector('dialog[open]')) {
+      flushSync(() => setAiOpen(false));
+      return;
+    }
+    return back();
+  });
   const active = draft?.analysis;
   const utilityPage = isUtilityPage(page);
   const workflowPage = utilityPage ? utilityReturn.current : page;
@@ -525,8 +710,12 @@ export default function App() {
           instant={page === 'tutorial'}
           visible={!utilityClosing}
           onExited={() => {
-            setUtilityClosing(false);
-            setPage(utilityReturn.current);
+            flushSync(() => {
+              setUtilityClosing(false);
+              setPage(utilityReturn.current);
+            });
+            utilityExitDone.current?.();
+            utilityExitDone.current = null;
           }}
         >
           {renderHeader(page)}
@@ -537,6 +726,7 @@ export default function App() {
                 : utilityLabels[page]}
             </h1>
             {page === 'theme' && <ThemePage appearance={appearance} />}
+            {page === 'ai' && <AiSettingsPage settings={ai} />}
             {page === 'tutorial' && (
               <TutorialPage
                 kind={tutorialKind}
@@ -567,6 +757,16 @@ export default function App() {
           }}
         />
       )}
+      <Assistant
+        settings={ai}
+        open={aiOpen}
+        onOpen={() => setAiOpen(true)}
+        onClose={() => setAiOpen(false)}
+        onConfigure={() => {
+          setAiOpen(false);
+          void openUtility('ai');
+        }}
+      />
     </>
   );
 }
