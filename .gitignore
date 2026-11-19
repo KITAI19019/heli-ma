@@ -1,4 +1,4 @@
-# Publish only the application, build inputs and deployment workflow.
+# Publish the application, build inputs, deployment workflow and README showcase images.
 # Everything else at the project root stays local, including tests, drafts,
 # screenshots, editor state, node_modules, dist, output and _local.
 /*
@@ -7,6 +7,11 @@
 !/.nvmrc
 !/.prettierrc.json
 !/README.md
+!/docs/
+/docs/*
+!/docs/showcase/
+/docs/showcase/*
+!/docs/showcase/*.webp
 !/API.md
 !/index.html
 !/package.json
