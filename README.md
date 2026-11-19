@@ -8,8 +8,6 @@
 
 开发入口：[接口文档](API.md) · [助手行为预设](src/ai/agent-preset.md) · [构建与部署记录](https://github.com/KITAI19019/heli-ma/actions/workflows/deploy.yml)。
 
-开发端口为 5177，生产预览端口为 4177。GitHub Pages 从 `main` 构建并发布当前版本；本地旧版本、测试及交接资料独立保留，不上传仓库。
-
 整理事实、检查因果关系与主张，记录自己的判断。一个支持离线使用的 PWA，分析记录保存在当前浏览器的本地 SQLite 数据库中。
 
 [打开应用](https://kitai19019.github.io/heli-ma/) · [GitHub 仓库](https://github.com/KITAI19019/heli-ma)
