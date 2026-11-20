@@ -27,8 +27,10 @@ export function GrowingTextarea({
     const limit = Math.max(1, (form.clientHeight - occupied - gaps) / fields.length);
     const border = textarea.offsetHeight - textarea.clientHeight;
     const previousScroll = textarea.scrollTop;
+    textarea.style.removeProperty('height');
+    const defaultHeight = textarea.offsetHeight;
     textarea.style.height = '0px';
-    textarea.style.height = `${Math.min(limit, Math.max(132, textarea.scrollHeight + border))}px`;
+    textarea.style.height = `${Math.min(limit, Math.max(defaultHeight, textarea.scrollHeight + border))}px`;
     textarea.scrollTop = previousScroll;
   };
 
@@ -38,6 +40,10 @@ export function GrowingTextarea({
     if (!form) return;
     const observer = new ResizeObserver(resize);
     observer.observe(form);
+    for (const child of form.children) {
+      const fixedContent = child.matches('.field') ? child.querySelector('.field-name') : child;
+      if (fixedContent) observer.observe(fixedContent);
+    }
     return () => observer.disconnect();
   }, []);
 

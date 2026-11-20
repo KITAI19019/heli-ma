@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { lockBodyScroll } from './scrollLock';
 
-type CloseSidebar = (onStart?: () => void, immediate?: boolean) => void;
+type CloseSidebar = (onStart?: () => void) => void;
 type Gesture = {
   id: number;
   x: number;
@@ -14,14 +14,6 @@ type Gesture = {
   lastTime: number;
   velocity: number;
 };
-const blurLayers = [
-  { radius: 1, start: 55, end: 100 },
-  { radius: 2, start: 35, end: 85 },
-  { radius: 4, start: 20, end: 65 },
-  { radius: 8, start: 10, end: 45 },
-  { radius: 16, start: 0, end: 25 },
-];
-
 export function Sidebar({
   open,
   onClose,
@@ -73,7 +65,7 @@ export function Sidebar({
             frame = requestAnimationFrame(() => setProgress(0));
           });
         else setProgress(0);
-        timer = window.setTimeout(finishClose, 360);
+        timer = window.setTimeout(finishClose, 300);
       }
       synchronizeExit.current = false;
     }
@@ -90,10 +82,9 @@ export function Sidebar({
     [finishClose],
   );
 
-  const close: CloseSidebar = (action, immediate = false) => {
+  const close: CloseSidebar = (action) => {
     if (!open) return;
-    synchronizeExit.current = !immediate && Boolean(action);
-    if (immediate) finishClose();
+    synchronizeExit.current = Boolean(action);
     onClose();
     action?.();
   };
@@ -158,6 +149,8 @@ export function Sidebar({
       className="sidebar-overlay"
       ref={dialog}
       aria-labelledby="sidebar-title"
+      data-open={open}
+      data-revealed={progress > 0}
       data-dragging={dragging}
       style={{ ['--sidebar-progress' as string]: progress }}
       onCancel={(event) => {
@@ -180,19 +173,6 @@ export function Sidebar({
         }
       }}
     >
-      <div className="sidebar-blur" aria-hidden="true">
-        {blurLayers.map((layer) => (
-          <span
-            key={layer.radius}
-            className="sidebar-blur-layer"
-            style={{
-              ['--blur' as string]: `${layer.radius}px`,
-              ['--fade-start' as string]: `${layer.start}%`,
-              ['--fade-end' as string]: `${layer.end}%`,
-            }}
-          />
-        ))}
-      </div>
       <div className="sidebar-backdrop" aria-hidden="true" onClick={() => close()} />
       <div
         className="sidebar"

@@ -23,10 +23,10 @@ import { ResultPage } from './ResultPage';
 import { ThemePage } from './ThemePage';
 import { useAppearance } from './useAppearance';
 import { UtilityScreen } from './UtilityScreen';
-import { transitionWorkflow } from './workflowTransition';
+import { revealWorkflow, transitionWorkflow } from './workflowTransition';
 import { DiscardDialog, type DiscardRequest } from './DiscardDialog';
 import { HistoryList } from './HistoryList';
-import { useViewport, useFittedDescriptions } from './useViewport';
+import { useViewport } from './useViewport';
 import { useBrowserBack } from './useBrowserBack';
 import { AppHeader } from './AppHeader';
 import { UtilityNavigation } from './UtilityNavigation';
@@ -208,17 +208,15 @@ export default function App() {
       tutorialTransitionPending.current = false;
     });
   }
-  async function openUtility(next: UtilityPage, kind: TutorialKind | null = null) {
-    const update = () => {
+  function openUtility(next: UtilityPage, kind: TutorialKind | null = null) {
+    flushSync(() => {
       if (!isUtilityPage(page)) utilityReturn.current = page;
       setTutorialKind(kind);
       setTutorialFromCatalog(false);
       setUtilityClosing(false);
       setSidebarOpen(false);
       setPage(next);
-    };
-    if (next === 'tutorial') await changeTutorialPage(update);
-    else flushSync(update);
+    });
   }
   function openTutorialFromCatalog(kind: TutorialKind) {
     return changeTutorialPage(() => {
@@ -230,9 +228,8 @@ export default function App() {
     return changeTutorialPage(() => setTutorialKind(null));
   }
   async function returnFromUtility() {
-    if (page === 'tutorial') {
-      if (tutorialKind && tutorialFromCatalog) await openTutorialCatalog();
-      else await changeTutorialPage(() => setPage(utilityReturn.current));
+    if (page === 'tutorial' && tutorialKind && tutorialFromCatalog) {
+      await openTutorialCatalog();
       return;
     }
     await new Promise<void>((resolve) => {
@@ -341,9 +338,9 @@ export default function App() {
       const target = route as Extract<Route, { page: UtilityPage }>;
       if (target.page === 'tutorial' && page === 'tutorial') {
         if (target.kind && !tutorialKind) await openTutorialFromCatalog(target.kind);
-        else await changeTutorialPage(() => setTutorialKind(target.kind ?? null));
-      } else
-        await openUtility(target.page, target.page === 'tutorial' ? (target.kind ?? null) : null);
+        else if (tutorialKind !== (target.kind ?? null))
+          await changeTutorialPage(() => setTutorialKind(target.kind ?? null));
+      } else openUtility(target.page, target.page === 'tutorial' ? (target.kind ?? null) : null);
       return;
     }
 
@@ -557,9 +554,24 @@ export default function App() {
   const active = draft?.analysis;
   const utilityPage = isUtilityPage(page);
   const workflowPage = utilityPage ? utilityReturn.current : page;
-  useFittedDescriptions(workflowPage);
   const Main = utilityPage ? 'div' : 'main';
-  const headingText = workflowHeading(workflowPage, active?.kind);
+  const pageTitle = (
+    <h1 tabIndex={-1} ref={heading} className="page-title">
+      {workflowHeading(workflowPage, active?.kind)}
+    </h1>
+  );
+  const editInputButton = (
+    <button
+      disabled={busy}
+      onClick={() => {
+        void navigate('input', () => {
+          if (draft) updateDraft({ ...draft, screen: 'input' });
+        });
+      }}
+    >
+      修改输入
+    </button>
+  );
 
   function renderHeader(screen: Page) {
     const utility = isUtilityPage(screen);
@@ -622,10 +634,15 @@ export default function App() {
           data-page={workflowPage}
           data-kind={workflowPage === 'result' ? result?.kind : active?.kind}
         >
-          <h1 tabIndex={-1} ref={heading} className="page-title">
-            {headingText}
-          </h1>
-          {error && (
+          {workflowPage === 'analysis' && active?.kind === 'claim' ? (
+            <div className="analysis-heading claim-heading">
+              {pageTitle}
+              {editInputButton}
+            </div>
+          ) : (
+            pageTitle
+          )}
+          {error && workflowPage !== 'input' && (
             <p className="error" role="alert">
               {error}
             </p>
@@ -637,27 +654,31 @@ export default function App() {
           )}
           {workflowPage === 'home' && <HomePage appearance={appearance} onStart={start} />}
           {workflowPage === 'input' && active && (
-            <InputPage value={active} onChange={updateAnalysis} onAnalyze={analyze} onHome={home} />
+            <InputPage
+              value={active}
+              error={error}
+              onChange={updateAnalysis}
+              onAnalyze={analyze}
+              onHome={home}
+            />
           )}
           {workflowPage === 'analysis' && active && (
             <>
-              <div
-                className={
-                  active.kind === 'fact' ? 'analysis-heading' : 'analysis-heading compact-heading'
-                }
-              >
-                <p className="statement">{titleOf(active)}</p>
-                <button
-                  disabled={busy}
-                  onClick={() => {
-                    void navigate('input', () => {
-                      if (draft) updateDraft({ ...draft, screen: 'input' });
-                    });
-                  }}
-                >
-                  修改输入
-                </button>
-              </div>
+              {active.kind !== 'claim' && (
+                <div className="analysis-heading">
+                  {active.kind === 'relation' ? (
+                    <dl className="analysis-pair">
+                      <dt className="field-key">A</dt>
+                      <dd>{active.a}</dd>
+                      <dt className="field-key">B</dt>
+                      <dd>{active.b}</dd>
+                    </dl>
+                  ) : (
+                    <p className="statement">{titleOf(active)}</p>
+                  )}
+                  {editInputButton}
+                </div>
+              )}
               <fieldset disabled={busy} className="editor-fieldset">
                 <AnalysisEditor key={active.id} value={active} onChange={updateAnalysis} />
                 <Judgment value={active} onChange={updateAnalysis} />
@@ -707,13 +728,13 @@ export default function App() {
       {utilityPage && (
         <UtilityScreen
           key={page}
-          instant={page === 'tutorial'}
           visible={!utilityClosing}
           onExited={() => {
             flushSync(() => {
               setUtilityClosing(false);
               setPage(utilityReturn.current);
             });
+            revealWorkflow();
             utilityExitDone.current?.();
             utilityExitDone.current = null;
           }}
@@ -743,7 +764,7 @@ export default function App() {
           <UtilityNavigation
             page={page}
             disabled={busy}
-            onSelect={(item) => close(() => openUtility(item), item === 'tutorial')}
+            onSelect={(item) => close(() => openUtility(item))}
           />
         )}
       </Sidebar>

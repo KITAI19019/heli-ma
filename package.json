@@ -1,15 +1,15 @@
 {
-  "name": "heli-ma-v02",
-  "version": "0.2.0",
+  "name": "heli-ma-v03",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "format": "prettier --write src scripts/build-sw.mjs vite.config.ts",
     "format:check": "prettier --check src scripts/build-sw.mjs vite.config.ts",
-    "dev": "vite --host 127.0.0.1 --port 5177 --strictPort",
+    "dev": "vite --host 127.0.0.1 --port 5178 --strictPort",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build && node scripts/build-sw.mjs",
-    "preview": "vite preview --host 127.0.0.1 --port 4177 --strictPort"
+    "preview": "vite preview --host 127.0.0.1 --port 4178 --strictPort"
   },
   "dependencies": {
     "react": "19.3.1",

@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { TopicIcon } from '../TopicIcon';
 import { tutorialKinds, tutorialNames, tutorials, type TutorialKind } from './content';
-import { TutorialIcon, TutorialIllustration } from './TutorialIllustration';
+import { TutorialIllustration } from './TutorialIllustration';
 import { TutorialImage } from './TutorialImage';
 import { useSwipeSteps } from './useSwipeSteps';
 import './tutorial.css';
@@ -18,7 +19,7 @@ function TutorialCatalog({ onSelect }: Pick<TutorialPageProps, 'onSelect'>) {
       <div className="tutorial-cards">
         {tutorialKinds.map((kind) => (
           <button className="tutorial-card" key={kind} onClick={() => onSelect(kind)}>
-            <TutorialIcon kind={kind} />
+            <TopicIcon kind={kind} />
             <span className="tutorial-card-content">
               <strong>{tutorialNames[kind]}</strong>
               <span className="tutorial-card-description">{tutorials[kind].description}</span>
@@ -36,11 +37,12 @@ function TutorialReader({
   returnLabel,
 }: Omit<TutorialPageProps, 'onSelect'> & { kind: TutorialKind }) {
   const tutorial = tutorials[kind];
-  const { stepIndex, dragOffset, dragging, goToStep, swipeHandlers } = useSwipeSteps(
+  const { stepIndex, dragOffset, dragging, jumping, goToStep, swipeHandlers } = useSwipeSteps(
     tutorial.steps.length,
   );
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(0);
+  const progressTouch = useRef<{ id: number; index: number; x: number; y: number } | null>(null);
   const lastStep = stepIndex === tutorial.steps.length - 1;
 
   useLayoutEffect(() => {
@@ -56,15 +58,56 @@ function TutorialReader({
       <span className="tutorial-step-count" aria-live="polite">
         步骤 {stepIndex + 1} / {tutorial.steps.length}
       </span>
-      <div className="tutorial-progress" aria-hidden="true">
+      <nav
+        className="tutorial-progress"
+        aria-label="跳转到教程步骤"
+        style={
+          {
+            '--step-count': tutorial.steps.length,
+            '--step-index': stepIndex,
+          } as CSSProperties
+        }
+      >
         {tutorial.steps.map((item, index) => (
-          <span key={item.title} data-complete={index <= stepIndex || undefined} />
+          <button
+            key={item.title}
+            aria-label={`第 ${index + 1} 步：${item.title}`}
+            aria-current={index === stepIndex ? 'step' : undefined}
+            data-complete={index < stepIndex || undefined}
+            onPointerDown={(event) => {
+              if (event.pointerType === 'touch' && event.isPrimary)
+                progressTouch.current = {
+                  id: event.pointerId,
+                  index,
+                  x: event.clientX,
+                  y: event.clientY,
+                };
+            }}
+            onPointerUp={(event) => {
+              const touch = progressTouch.current;
+              if (!touch || touch.id !== event.pointerId) return;
+              progressTouch.current = null;
+              // A tap immediately after a swipe can arrive without a compatibility click.
+              if (
+                touch.index === index &&
+                Math.hypot(event.clientX - touch.x, event.clientY - touch.y) <= 9
+              )
+                goToStep(index);
+            }}
+            onPointerCancel={() => {
+              progressTouch.current = null;
+            }}
+            onClick={() => {
+              if (index !== stepIndex) goToStep(index);
+            }}
+          />
         ))}
-      </div>
+      </nav>
       <div className="tutorial-step-slider" {...swipeHandlers}>
         <div
           className="tutorial-step-track"
           data-dragging={dragging || undefined}
+          data-jumping={jumping || undefined}
           style={{ transform: `translateX(calc(${-stepIndex * 100}% + ${dragOffset}px))` }}
         >
           {tutorial.steps.map((step, index) => (
@@ -76,9 +119,6 @@ function TutorialReader({
               aria-labelledby={`tutorial-step-heading-${index}`}
             >
               <div className="tutorial-step-copy">
-                <span className="tutorial-step-number" aria-hidden="true">
-                  0{index + 1}
-                </span>
                 <h2
                   id={`tutorial-step-heading-${index}`}
                   ref={index === stepIndex ? stepHeading : undefined}

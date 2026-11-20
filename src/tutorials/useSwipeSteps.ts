@@ -13,13 +13,16 @@ export function useSwipeSteps(count: number) {
   const [stepIndex, setStepIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [jumping, setJumping] = useState(false);
   const gesture = useRef<SwipeGesture | null>(null);
 
   function goToStep(index: number) {
+    const next = Math.max(0, Math.min(count - 1, index));
     gesture.current = null;
     setDragging(false);
     setDragOffset(0);
-    setStepIndex(Math.max(0, Math.min(count - 1, index)));
+    setJumping(Math.abs(next - stepIndex) > 1);
+    setStepIndex(next);
   }
 
   function startSwipe(event: PointerEvent<HTMLDivElement>) {
@@ -82,6 +85,7 @@ export function useSwipeSteps(count: number) {
     stepIndex,
     dragOffset,
     dragging,
+    jumping,
     goToStep,
     swipeHandlers: {
       onPointerDown: startSwipe,

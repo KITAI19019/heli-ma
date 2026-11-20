@@ -4,7 +4,6 @@ export type WorkflowPage = 'home' | 'input' | 'analysis' | 'history' | 'result';
 export type UtilityPage = 'tutorial' | 'language' | 'theme' | 'ai';
 export type Page = WorkflowPage | UtilityPage;
 
-export const utilityPages: readonly UtilityPage[] = ['tutorial', 'language', 'theme', 'ai'];
 export const utilityLabels: Record<UtilityPage, string> = {
   tutorial: '教程',
   language: '语言',

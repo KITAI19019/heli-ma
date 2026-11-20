@@ -66,91 +66,37 @@ main,
 .method-list {
   display: grid;
   grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: var(--method-gap);
   flex: 0 1 47%;
   min-height: 228px;
 }
 .type-card {
   min-height: 0;
-  padding: 8px 4px;
-  gap: 12px;
-  grid-template-columns: 30px minmax(0, 1fr) 20px;
-}
-.method-body {
-  min-width: 0;
-}
-.type-card {
+  padding: 8px clamp(10px, 2.7vw, 24px);
+  gap: clamp(11px, 2.4vw, 20px);
+  grid-template-columns: clamp(34px, 6dvh, 48px) minmax(0, 1fr) 32px;
   overflow: hidden;
 }
-.type-card[data-compact='true'] .method-desc {
-  display: none;
-}
-.matrix-head[data-compact='true'] small,
-.matrix-rowhead[data-compact='true'] small {
-  display: none;
-}
-.method-body strong {
+.method-title {
   font-size: clamp(24px, 3.6dvh, 34px);
 }
-.method-desc {
-  font-size: clamp(12px, 1.7dvh, 14px);
-  line-height: 1.5;
-  margin-top: 4px;
-}
 
-.input-form {
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--screen-gap);
-  padding-top: 0;
-}
-.input-form > .lead {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.input-form .field {
-  flex: none;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.field-name {
-  margin-bottom: 4px;
-  flex: none;
-}
-.field textarea {
-  flex: none;
-  height: 132px;
-  min-height: 0;
-  font-size: clamp(18px, 2.6dvh, 23px);
-}
-.input-form .relation-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-}
-.input-form .actions {
-  flex: none;
-  margin: 0;
-}
 .actions > button,
 .finish-bar > button {
   min-height: 42px;
   padding-block: 8px;
 }
 
-.analysis-heading,
-.analysis-heading.compact-heading {
+.analysis-heading {
   flex: none;
   flex-direction: row;
-  align-items: center;
-  padding: 0;
+  align-items: flex-start;
+  padding: clamp(8px, 1.4dvh, 14px) clamp(10px, 1.8vw, 18px);
   margin: 0;
-  gap: 10px;
-  border: 0;
+  gap: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
 }
 .analysis-heading .statement {
   font-size: clamp(18px, 2.5dvh, 26px);
@@ -166,15 +112,43 @@ main,
 }
 .analysis-heading button {
   margin: 0;
-  min-height: 36px;
+  min-height: 40px;
   padding: 5px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.analysis-heading.claim-heading {
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.analysis-pair {
+  align-self: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  flex: 1;
+  min-width: 0;
+  align-items: start;
+  gap: 5px 9px;
+  margin: 0;
+  font-size: clamp(15px, 2.3dvh, 19px);
+  line-height: 1.45;
+}
+.analysis-pair dd {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .editor-fieldset {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--screen-gap);
+  gap: clamp(8px, 1.6dvh, 18px);
 }
 .analysis-content {
   flex: 1;
@@ -182,44 +156,61 @@ main,
   display: flex;
   flex-direction: column;
 }
-.analysis-content > .hint {
-  display: none;
-}
-.table-scroll {
+.table-scroll,
+.graph-scroll {
   flex: 1;
   min-height: 0;
-  display: flex;
-  overflow: visible;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .matrix {
   width: 100%;
   height: 100%;
   margin: 0;
-  min-height: 0;
-  padding: 4px;
-  gap: 4px;
+  padding: clamp(5px, 0.9vw, 10px);
+  gap: clamp(5px, 0.9vw, 10px);
 }
 .fact-matrix {
-  grid-template-rows: 26px repeat(3, minmax(0, 1fr));
+  grid-template-columns: clamp(73px, 11vw, 114px) repeat(3, minmax(0, 1fr));
+  grid-template-rows: 36px repeat(3, minmax(95px, 1fr));
+  min-height: 370px;
+}
+.fact-matrix .matrix-rowhead {
+  grid-column: 1;
+}
+.fact-time-group {
+  display: contents;
+}
+.fact-time-group > * {
+  grid-column: var(--fact-column);
+  grid-row: var(--fact-row, 1);
 }
 .relation-matrix {
-  grid-template-rows: minmax(40px, 0.6fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: clamp(74px, 13vw, 140px) repeat(2, minmax(0, 1fr));
+  grid-template-rows: 36px repeat(2, minmax(108px, 1fr));
+  min-height: 285px;
 }
 .matrix > *,
 .matrix-cell {
   min-height: 0;
 }
-.fact-matrix .matrix-head {
-  padding: 3px 2px;
-}
-.fact-matrix .matrix-rowhead {
+.matrix .matrix-head,
+.matrix .matrix-rowhead {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 4px 2px;
+  padding: 4px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0;
 }
 .matrix-cell .cell-editor,
 .matrix-cell .cell-editor.readonly {
   min-height: 0;
-  padding: 5px;
+  padding: clamp(8px, 1.1vw, 14px);
 }
 .cell-editor {
   min-height: 0;
@@ -232,22 +223,16 @@ main,
   flex-direction: column;
   min-height: 0;
 }
-.fact-matrix .cell-label {
+.matrix .cell-label {
   display: none;
 }
-.matrix .cell-editor textarea,
-.argument .node textarea {
+.matrix .cell-editor textarea {
   flex: 1;
   height: 0;
   min-height: 0;
   margin: 0;
   line-height: 1.5;
-}
-.matrix .cell-editor textarea {
-  font-size: 14px;
-}
-.matrix .cell-editor textarea::placeholder {
-  font-size: 12px;
+  font-size: 16px;
 }
 .matrix-cell .sources,
 .argument .sources {
@@ -256,82 +241,50 @@ main,
   padding: 0;
 }
 .sources:has(.source-trigger) {
-  height: 26px;
+  min-height: 34px;
 }
 .sources:not(:has(.source-trigger)) {
   display: none;
 }
-.source-trigger {
-  min-height: 26px;
+.analysis-content .sources > .source-trigger {
+  min-height: 34px;
   max-width: 100%;
-  padding: 2px 0;
-}
-.relation-content .hypothesis {
-  flex: none;
-  margin: 0 0 6px;
-  padding: 5px 8px;
-  font-size: 11px;
-}
-.hypothesis strong {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.relation-matrix .matrix-head,
-.relation-matrix .matrix-rowhead {
-  padding: 4px;
-  gap: 2px;
-}
-.relation-matrix small {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.relation-matrix .matrix-head small,
-.relation-matrix .matrix-rowhead small {
-  font-size: clamp(12px, 1.7dvh, 17px);
-  line-height: 1.4;
+  padding: 4px 0;
+  font-size: 13px;
 }
 .judgment {
   flex: none;
   margin: 0;
+  padding-top: clamp(6px, 1.3dvh, 12px);
+  border-top: 1px solid var(--hairline);
 }
-.judgment-head,
-.judgment.is-pending .judgment-head {
-  font-size: clamp(18px, 2.5dvh, 26px);
+.judgment-head {
+  font-size: clamp(18px, 2.4dvh, 24px);
   line-height: 1.2;
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   gap: 8px;
 }
 .grade-buttons {
   margin: 0;
-  gap: 4px;
+  gap: clamp(4px, 1.3vw, 9px);
 }
 .grade-buttons button {
-  min-height: 40px;
-  padding: 13px 2px 5px;
-  font-size: 12px;
+  min-height: 42px;
+  padding: 6px 3px;
+  font-size: clamp(13px, 1.8vw, 15px);
+  line-height: 1.3;
   letter-spacing: 0;
 }
-.grade-buttons button::before {
-  top: 5px;
-  width: 4px;
-  height: 4px;
-}
 .judgment input[type='range'] {
-  height: 26px;
+  height: 34px;
 }
 .range-labels {
   margin: 0;
 }
 .judgment > .text-button {
   margin: 0;
-  min-height: 24px;
+  min-height: 30px;
+  font-size: 13px;
 }
 .finish-bar {
   flex: none;
@@ -342,65 +295,73 @@ main,
 }
 
 .graph-scroll {
-  flex: 1;
-  min-height: 0;
   padding: 0;
 }
 .argument {
-  height: 100%;
-  min-height: 0;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-rows: auto auto;
   row-gap: clamp(22px, 3.5dvh, 36px);
 }
 .argument .node {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 6px;
+  padding: clamp(9px, 1.3vw, 15px);
+  border-radius: var(--radius-md);
 }
 .argument .node > label {
   display: flex;
-  flex: 1;
+  flex: none;
   min-height: 0;
   flex-direction: column;
 }
 .argument .node textarea {
-  font-size: 14px;
+  flex: none;
+  height: calc(2lh + 4px);
+  min-height: calc(2lh + 4px);
+  max-height: calc(5lh + 4px);
+  margin: 2px 0 0;
+  padding: 2px 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+@supports (field-sizing: content) {
+  .argument .node textarea {
+    height: auto;
+    field-sizing: content;
+  }
 }
 .argument .node > span,
 .argument .node > label,
 .argument .cell-label {
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 600;
   line-height: 1.4;
 }
 .argument .cell-editor {
   padding: 0;
-  flex: 1;
+  height: auto;
+}
+.argument .cell-label {
+  min-height: 23px;
+  padding-inline-end: 4em;
 }
 .argument .sources {
   position: absolute;
-  top: 4px;
-  right: 5px;
-  height: 20px;
+  inset: 5px 9px auto auto;
+  min-height: 28px;
 }
-.argument .source-trigger {
-  min-height: 20px;
-  padding: 0;
-  font-size: 10px;
-}
-.argument .cell-label {
-  padding-right: 38px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.analysis-content .argument .sources > .source-trigger {
+  min-height: 28px;
+  padding: 2px 0;
 }
 .argument .node > .text-button {
   position: absolute;
   top: 3px;
   right: 4px;
-  width: 22px;
-  height: 22px;
-  min-height: 22px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   font-size: 0;
 }
 .argument .node > .text-button::after {
@@ -411,11 +372,9 @@ main,
   padding-top: 0;
 }
 .claim-node p {
-  flex: 1;
-  height: 0;
-  min-height: 0;
+  max-height: 5lh;
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
 }
 .qualifier strong {
@@ -424,22 +383,18 @@ main,
 }
 .reason-column,
 .exception-column {
-  align-self: stretch;
+  align-self: start;
   min-height: 0;
-  gap: 4px;
+  gap: 12px;
 }
 .reason-group {
   display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto;
   gap: 16px;
-  flex: 1;
   min-height: 0;
 }
 .reason-group .backing {
   margin: 0 0 0 12px;
-}
-.exception-column > .exception {
-  flex: 1;
 }
 .reason-group .text-button,
 .exception .text-button {
@@ -457,20 +412,16 @@ main,
   grid-column: 1 / -1;
 }
 .workflow-main[data-kind='claim'] .range-labels {
+  grid-column: 1 / -1;
   gap: 8px;
 }
-.node-pagination {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+.workflow-main[data-kind='claim'] .judgment:has(> .text-button) .range-labels {
+  grid-column: 1;
 }
 .add-button {
-  min-height: 28px;
-  padding: 3px 2px;
-  font-size: 12px;
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 .pager {
   display: flex;
@@ -850,44 +801,152 @@ main,
   min-height: 38px;
   padding: 6px 10px;
 }
+.source-list {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
+.source-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+.source-item label {
+  font-size: 15px;
+  font-weight: 600;
+}
+.source-item button {
+  min-height: 32px;
+  padding-inline: 6px;
+}
+.source-item textarea {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 88px;
+  padding: 10px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: 16px / 1.6 var(--font-ui);
+}
 
-@media (max-width: 560px) {
-  :root {
-    --gutter: 14px;
+@media (max-width: 700px) {
+  .matrix {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    gap: 10px;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+  }
+  .matrix .matrix-spacer,
+  .matrix .matrix-rowhead,
+  .relation-matrix .matrix-head {
+    display: none;
+  }
+  .fact-matrix {
+    gap: 20px;
+  }
+  .fact-time-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    min-width: 0;
+  }
+  .fact-time-group > * {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .fact-time-group .matrix-head {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding: 1px 0 5px;
+    border: 0;
+    border-bottom: 1px solid var(--hairline);
+    border-radius: 0;
+    background: transparent;
+    font: 600 19px / 1.4 var(--font-display);
+  }
+  .matrix .matrix-cell {
+    border-radius: var(--radius-md);
+  }
+  .matrix .cell-editor,
+  .matrix .cell-editor.readonly {
+    height: auto;
+    padding: 12px;
+  }
+  .matrix .cell-label {
+    display: block;
   }
   .matrix .cell-editor textarea {
-    font-size: 12px;
+    flex: none;
+    height: clamp(54px, 7dvh, 76px);
+    padding: 3px 0;
   }
-  .matrix .cell-editor textarea::placeholder {
-    font-size: 11px;
-  }
-  .fact-matrix .matrix-rowhead small {
-    font-size: 9px;
+  .argument {
+    column-gap: 5px;
+    row-gap: 28px;
   }
   .argument .node {
-    padding: 5px;
+    padding: 8px 9px;
+    border-color: var(--hairline);
   }
-  .argument .node textarea,
-  .claim-node p {
-    font-size: 12px;
+  .argument .node:focus-within {
+    border-color: var(--vermilion);
   }
   .argument .node > span,
   .argument .node > label,
   .argument .cell-label {
-    font-size: 11px;
+    font-size: 14px;
   }
-  .judgment-head,
-  .judgment.is-pending .judgment-head {
-    font-size: 18px;
+  .reason-column,
+  .exception-column {
+    gap: 10px;
   }
-  .grade-buttons button {
-    font-size: 11px;
+  .reason-group {
+    gap: 14px;
+  }
+  .reason-group .backing {
+    margin-left: 8px;
   }
   .finish-bar .primary {
     width: 100%;
   }
-  .node-pagination .pager {
-    width: 100%;
+}
+@media (min-width: 530px) and (max-width: 700px) {
+  .fact-time-group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  .fact-time-group .cell-editor {
+    min-height: 100%;
+  }
+  .relation-matrix {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 529px) {
+  .argument {
+    grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+    grid-template-areas:
+      'claim claim claim'
+      'data a1 qual'
+      'branches branches branches';
+  }
+  .argument .claim-node {
+    background: var(--surface-2);
+  }
+}
+@media (max-width: 560px) {
+  :root {
+    --gutter: 14px;
   }
 }
 @media (max-height: 660px) {
@@ -897,14 +956,8 @@ main,
   .theme-page:has(.custom-artwork-choice) {
     justify-content: space-between;
   }
-  .node-pagination .add-button {
-    min-height: 25px;
-  }
   .argument {
     row-gap: 22px;
-  }
-  .range-labels {
-    font-size: 9px;
   }
 }
 @media (max-height: 500px) and (min-width: 600px) {
@@ -937,8 +990,7 @@ main,
   .workflow-main[data-page='analysis'] .finish-bar button {
     width: 100%;
   }
-  .judgment-head,
-  .judgment.is-pending .judgment-head {
+  .judgment-head {
     flex-direction: column;
     align-items: flex-start;
     font-size: 16px;
@@ -952,27 +1004,11 @@ main,
     min-height: 26px;
     padding: 2px;
   }
-  .grade-buttons button::before {
-    display: none;
-  }
   .workflow-main[data-kind='claim'] .judgment {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
-  }
-  .node-pagination {
-    flex-wrap: nowrap;
-  }
-  .node-pagination .add-button {
-    width: auto;
-    flex: 1;
-  }
-  .node-pagination .pager {
-    gap: 3px;
-  }
-  .node-pagination .pager button {
-    width: 26px;
   }
   .workflow-main[data-page='result'] {
     display: grid;
@@ -1023,14 +1059,11 @@ main,
     flex: 1;
     min-height: 0;
   }
-  .method-desc {
-    font-size: 11px;
-  }
-  .method-body strong {
+  .method-title {
     font-size: 22px;
   }
   .type-card {
-    padding: 3px;
+    padding: 3px 9px;
   }
   .sidebar-heading {
     margin-bottom: 8px;

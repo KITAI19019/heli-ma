@@ -5,12 +5,10 @@ export function UtilityScreen({
   visible,
   onExited,
   children,
-  instant = false,
 }: {
   visible: boolean;
   onExited: () => void;
   children: ReactNode;
-  instant?: boolean;
 }) {
   const screen = useRef<HTMLElement>(null);
   const [entered, setEntered] = useState(false);
@@ -19,7 +17,6 @@ export function UtilityScreen({
 
   useEffect(() => {
     const releaseScroll = lockBodyScroll();
-    if (instant) return releaseScroll;
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => setEntered(true));
     });
@@ -27,14 +24,14 @@ export function UtilityScreen({
       cancelAnimationFrame(frame);
       releaseScroll();
     };
-  }, [instant]);
+  }, []);
 
   useEffect(() => {
-    if (visible || instant) return;
-    const delay = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 360;
+    if (visible) return;
+    const delay = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300;
     const timer = window.setTimeout(() => exit.current(), delay);
     return () => clearTimeout(timer);
-  }, [visible, instant]);
+  }, [visible]);
 
   function finishTransition() {
     if (!visible) exit.current();
@@ -45,11 +42,14 @@ export function UtilityScreen({
     <section
       ref={screen}
       className="utility-screen"
-      data-visible={(instant || entered) && visible}
-      data-instant={instant || undefined}
+      data-visible={entered && visible}
+      inert={!visible || undefined}
       aria-label="设置页面"
       onTransitionEnd={(event) => {
-        if (event.target === event.currentTarget && event.propertyName === 'transform')
+        if (
+          event.target === event.currentTarget.firstElementChild &&
+          event.propertyName === 'opacity'
+        )
           finishTransition();
       }}
     >

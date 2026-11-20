@@ -1,11 +1,12 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 type Connection = { key: string; kind: 'main' | 'support' | 'limit'; d: string; arrow?: boolean };
+type BranchLabel = { kind: 'support' | 'limit'; text: string; x: number; y: number };
 type Diagram = {
   width: number;
   height: number;
   connections: Connection[];
-  labels: { text: string; x: number; y: number; kind: string }[];
+  labels: BranchLabel[];
 };
 
 export function ClaimConnections({ structureKey }: { structureKey: string }) {
@@ -22,6 +23,7 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
     const graph = svgRef.current?.parentElement;
     if (!graph) return;
     const measure = () => {
+      if (!svgRef.current?.getClientRects().length) return;
       const origin = graph.getBoundingClientRect();
       const box = (element: Element) => {
         const rect = element.getBoundingClientRect();
@@ -45,9 +47,14 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
         c = box(claim);
       const connections: Connection[] = [
         { key: 'facts-to-judgment', kind: 'main', d: `M ${d.right} ${d.cy} H ${q.x}`, arrow: true },
-        { key: 'judgment-to-claim', kind: 'main', d: `M ${q.right} ${q.cy} H ${c.x}`, arrow: true },
+        {
+          key: 'judgment-to-claim',
+          kind: 'main',
+          d: c.bottom < q.y ? `M ${q.cx} ${q.y} V ${c.bottom}` : `M ${q.right} ${q.cy} H ${c.x}`,
+          arrow: true,
+        },
       ];
-      const labels: Diagram['labels'] = [];
+      const labels: BranchLabel[] = [];
       const reasons = [...graph.querySelectorAll('.reason-node')].map(box);
       const exceptions = [...graph.querySelectorAll('.exception')].map(box);
 
@@ -69,7 +76,7 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
             d: `M ${reason.x} ${reason.cy} H ${spine}`,
           }),
         );
-        labels.push({ text: '支撑', x: (spine + targetX) / 2, y: junction, kind: 'support' });
+        labels.push({ kind: 'support', text: '支撑', x: (spine + targetX) / 2, y: junction });
       }
       graph.querySelectorAll('.reason-group').forEach((group, index) => {
         const reason = box(group.querySelector('.reason-node')!);
@@ -100,7 +107,7 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
             d: `M ${exception.right} ${exception.cy} H ${spine}`,
           }),
         );
-        labels.push({ text: '限制', x: (targetX + spine) / 2, y: junction, kind: 'limit' });
+        labels.push({ kind: 'limit', text: '限制', x: (targetX + spine) / 2, y: junction });
       }
       const next = { width: origin.width, height: origin.height, connections, labels };
       setDiagram((previous) =>
@@ -120,7 +127,7 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
       className="claim-connections"
       viewBox={`0 0 ${diagram.width} ${diagram.height}`}
       role="img"
-      aria-label="事实支持主张；理由支撑可信程度，依据支撑对应理由；例外限制可信程度。"
+      aria-label="事实和理由支撑可信程度，依据支撑对应理由，例外限制可信程度，可信程度指向主张。"
     >
       <defs>
         {(['main', 'support', 'limit'] as const).map((kind) => (
@@ -148,16 +155,17 @@ export function ClaimConnections({ structureKey }: { structureKey: string }) {
           markerEnd={connection.arrow ? `url(#${markerId}-${connection.kind})` : undefined}
         />
       ))}
-      {diagram.labels.map((label) => (
+      {diagram.labels.map(({ kind, text, x, y }) => (
         <text
-          key={label.text}
-          className={`connection-label connection-${label.kind}`}
-          x={label.x}
-          y={label.y}
+          key={kind}
+          className={`connection-label connection-${kind}`}
+          x={x}
+          y={y}
           textAnchor="middle"
           dominantBaseline="central"
+          aria-hidden="true"
         >
-          {label.text}
+          {text}
         </text>
       ))}
     </svg>

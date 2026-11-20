@@ -1,6 +1,9 @@
-import { utilityLabels, utilityPages, type Page, type UtilityPage } from './navigation';
+import type { CSSProperties } from 'react';
+import { utilityLabels, type Page, type UtilityPage } from './navigation';
 
-function MenuIcon({ page }: { page: UtilityPage }) {
+const sidebarPages = ['tutorial', 'theme', 'ai'] as const satisfies readonly UtilityPage[];
+
+function MenuIcon({ page }: { page: (typeof sidebarPages)[number] }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -17,11 +20,6 @@ function MenuIcon({ page }: { page: UtilityPage }) {
         <>
           <path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15" />
           <path d="M6 8h3M6 12h3M15 8h3M15 12h3" />
-        </>
-      )}
-      {page === 'language' && (
-        <>
-          <path d="M2 5h12M7 2v3M11 5c-1 5-4 8-8 10M5 8c1 3 4 5 7 6M13 21l4-10 4 10M14.5 17h5" />
         </>
       )}
       {page === 'theme' && (
@@ -49,9 +47,10 @@ interface UtilityNavigationProps {
 export function UtilityNavigation({ page, disabled, onSelect }: UtilityNavigationProps) {
   return (
     <nav className="sidebar-nav" aria-label="主导航">
-      {utilityPages.map((item) => (
+      {sidebarPages.map((item, index) => (
         <button
           key={item}
+          style={{ '--item-delay': `${24 + index * 26}ms` } as CSSProperties}
           disabled={disabled}
           onClick={() => onSelect(item)}
           aria-current={page === item ? 'page' : undefined}
